@@ -1,4 +1,3 @@
-
 import React, {useEffect, useState} from 'react';
 import {View, ActivityIndicator} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -41,6 +40,13 @@ import AddSkill from '../components/advocate/addProfileSection/AddSkill';
 import UserProfile from '../components/user/UserProfile';
 import ConsultationDetails from '../components/advocate/ConsultationDetails';
 import OnBoardingScreen from '../components/onboarding/OnboardingScreen';
+import UserAccount from '../components/user/UserAccount';
+import UserNotification from '../components/user/UserNotification';
+import PrivacyPolicy from '../components/common/PrivacyPolicy';
+import ContactUs from '../components/common/ContactUs';
+import AboutUs from '../components/common/AboutUs';
+import HelpSupport from '../components/common/HelpSupport';
+import ViewSkill from '../components/advocate/EditProfileSection/EditSkill/ViewSkill';
 
 const Stack = createNativeStackNavigator();
 export default function Routes() {
@@ -53,9 +59,9 @@ export default function Routes() {
   // const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem("alreadyLaunched").then((value) => {
+    AsyncStorage.getItem('alreadyLaunched').then(value => {
       if (value === null) {
-        AsyncStorage.setItem("alreadyLaunched", "true");
+        AsyncStorage.setItem('alreadyLaunched', 'true');
         setIsFirstTimeLoad(true);
       } else {
         setIsFirstTimeLoad(false);
@@ -115,7 +121,7 @@ export default function Routes() {
               <Stack.Screen
                 name="OnBoardingScreen"
                 component={OnBoardingScreen}
-                options={{ headerShown: false }}
+                options={{headerShown: false}}
               />
             )}
 
@@ -228,6 +234,10 @@ const AppStack = ({route}) => {
           <Stack.Screen name={'AddExperience'} component={AddExperience} />
           <Stack.Screen name={'AddCertificate'} component={AddCertificate} />
           <Stack.Screen name={'AddSkill'} component={AddSkill} />
+          <Stack.Screen
+            name={"ViewSkill"}
+            component={ViewSkill}
+          />
         </>
       )}
       {role === 'Nun' && (
@@ -237,7 +247,13 @@ const AppStack = ({route}) => {
             component={UserNavigator}
           />
           <Stack.Screen name={'EditUserProfile'} component={EditUserProfile} />
-          <Stack.Screen name={'Profile'} component={UserProfile} />
+
+          <Stack.Screen name={'UserAccount'} component={UserAccount} />
+          <Stack.Screen name={'UserProfile'} component={UserProfile} />
+          <Stack.Screen
+            name={'UserNotification'}
+            component={UserNotification}
+          />
           <Stack.Screen
             name={navigationStrings.USER_BOOKING}
             component={BookConsultation}
@@ -261,6 +277,10 @@ const AppStack = ({route}) => {
           />
         </>
       )}
+      <Stack.Screen name={'PrivacyPolicy'} component={PrivacyPolicy} />
+      <Stack.Screen name={'ContactUs'} component={ContactUs} />
+      <Stack.Screen name={'AboutUs'} component={AboutUs} />
+      <Stack.Screen name={'HelpSupport'} component={HelpSupport} />
     </Stack.Navigator>
   );
 };

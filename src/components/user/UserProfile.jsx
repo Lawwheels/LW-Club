@@ -166,7 +166,7 @@ const UserProfile = () => {
                   userDetails.profilePic &&
                   userDetails?.profilePic?.url
                     ? {uri: userDetails?.profilePic?.url}
-                    : require('../../../assets/images/avatar.png')
+                    : require('../../../assets/images/user1.png')
                 }
                 style={styles.profileImage}
               />
@@ -292,7 +292,7 @@ const UserProfile = () => {
                     ? {uri: selectedFile} // Use selected file if it exists
                     : userDetails?.profilePic?.url
                     ? {uri: userDetails.profilePic.url} // Use profile picture URL if available
-                    : require('../../../assets/images/avatar.png') // Default avatar image if none are available
+                    : require('../../../assets/images/user1.png') // Default avatar image if none are available
                 }
                 style={{width: 200, height: 200, borderRadius: 100}} // Adjust styles as needed
               />

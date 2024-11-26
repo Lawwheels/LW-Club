@@ -23,14 +23,16 @@ import {useAdvocateCertificateMutation} from '../../../redux/api/api';
 
 const certificateValidationSchema = Yup.object().shape({
   firmName: Yup.string().required('Company name is required'),
+  certificate_name: Yup.string().required('Certificate name is required'),
+  certificate_number: Yup.string().required('Certificate number is required'),
+  issueDate: Yup.date().nullable().required('Issue date is required'),
 });
 
 export default AddCertificate = ({navigation}) => {
-  const [issueDate, setIssueDate] = useState([]);
-  const [issueDatePicker, setIssueDatePicker] = useState([]);
+  const [issueDate, setIssueDate] = useState(new Date());
+  const [issueDatePicker, setIssueDatePicker] = useState(false);
 
-  const [advocateCertificate, {isLoading: certificateLoading}] =
-    useAdvocateCertificateMutation();
+  const [advocateCertificate] = useAdvocateCertificateMutation();
 
   return (
     <>
@@ -41,7 +43,7 @@ export default AddCertificate = ({navigation}) => {
       <KeyboardAwareScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}>
-        <Formik
+        {/* <Formik
           initialValues={{
             certificates: [
               {
@@ -323,6 +325,163 @@ export default AddCertificate = ({navigation}) => {
               />
             );
           }}
+        </Formik> */}
+        <Formik
+          initialValues={{
+            firmName: '',
+            certificate_number: '',
+            certificate_name: '',
+            issueDate: null,
+          }}
+          validationSchema={certificateValidationSchema}
+          onSubmit={async (values, {setSubmitting}) => {
+            try {
+              const certificateToSubmit = {
+                firmName: values.firmName,
+                certificate_name: values.certificate_name,
+                certificate_number: values.certificate_number,
+                issueDate: values.issueDate,
+              };
+
+              const response = await advocateCertificate(certificateToSubmit);
+              console.log('API Response:', response);
+
+              if (response?.data?.success) {
+                showMessage({
+                  message: 'Success',
+                  description: response?.data?.message,
+                  type: 'success',
+                  titleStyle: {
+                    fontFamily: 'Poppins SemiBold',
+                  },
+                  textStyle: {fontFamily: 'Poppins'},
+                });
+                navigation.navigate('ViewAdvocateProfile');
+              } else {
+                const errorMsg =
+                  response.error?.data?.message || 'Something went wrong!';
+                showMessage({
+                  message: 'Error',
+                  description: errorMsg,
+                  type: 'danger',
+                  titleStyle: {
+                    fontFamily: 'Poppins SemiBold',
+                  },
+                  textStyle: {fontFamily: 'Poppins'},
+                });
+              }
+            } catch (error) {
+              console.error('Submission error: ', error);
+              const errorMsg =
+                error?.response?.data?.error?.data?.message ||
+                'Something went wrong!';
+              showMessage({
+                message: 'Error',
+                description: errorMsg,
+                type: 'danger',
+                titleStyle: {fontFamily: 'Poppins SemiBold'},
+                textStyle: {fontFamily: 'Poppins'},
+              });
+            } finally {
+              setSubmitting(false); // Ensure this is always called
+            }
+          }}>
+          {({
+            handleSubmit,
+            values,
+            setFieldValue,
+            errors,
+            touched,
+            handleBlur,
+            isSubmitting,
+          }) => (
+            <View style={styles.experienceItem}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Company Name</Text>
+
+                <TextInput
+                  placeholder="Enter Name"
+                  style={styles.input}
+                  value={values.firmName}
+                  onChangeText={value => setFieldValue(`firmName`, value)}
+                />
+                  {errors.firmName && touched.firmName && (
+                  <Text style={styles.errorText}>{errors.firmName}</Text>
+                )}
+              </View>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Certificate Name</Text>
+
+                <TextInput
+                  placeholder="Enter Answer"
+                  style={styles.input}
+                  value={values.certificate_name}
+                  onChangeText={value =>
+                    setFieldValue(`certificate_name`, value)
+                  }
+                />
+                   {errors.certificate_name && touched.certificate_name && (
+                  <Text style={styles.errorText}>{errors.certificate_name}</Text>
+                )}
+              </View>
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Certificate Number</Text>
+
+                <TextInput
+                  placeholder="Enter Answer"
+                  style={styles.input}
+                  value={values.certificate_number}
+                  onChangeText={value =>
+                    setFieldValue(`certificate_number`, value)
+                  }
+                />
+                   {errors.certificate_number && touched.certificate_number && (
+                  <Text style={styles.errorText}>{errors.certificate_number}</Text>
+                )}
+              </View>
+              <View>
+                <Text style={styles.inputLabel}>Issue Date</Text>
+                <TouchableOpacity
+                  style={styles.customButton}
+                  onPress={() => setIssueDatePicker(true)}>
+                  {values.issueDate ? (
+                    <Text style={styles.buttonText}>{values.issueDate}</Text>
+                  ) : (
+                    <Text style={styles.buttonText}>Select Issue Date</Text>
+                  )}
+                </TouchableOpacity>
+                {issueDatePicker && (
+                  <DateTimePicker
+                    value={issueDate || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      if (event.type === 'set') {
+                        const formattedDate = selectedDate
+                          .toISOString()
+                          .split('T')[0];
+                        setFieldValue('issueDate', formattedDate);
+                        setIssueDate(selectedDate);
+                      }
+                      setIssueDatePicker(false);
+                    }}
+                  />
+                )}
+                 {errors.issueDate && touched.issueDate && (
+                  <Text style={styles.errorText}>{errors.issueDate}</Text>
+                )}
+              </View>
+
+              <View style={{marginTop: hp('2%')}}>
+                <CustomButton
+                  title="Save"
+                  onPress={handleSubmit}
+                  disabled={isSubmitting}
+                
+                />
+              </View>
+            </View>
+          )}
         </Formik>
       </KeyboardAwareScrollView>
     </>
@@ -361,7 +520,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: 'red',
-    marginBottom: hp('1.5%'),
+    marginTop: hp('1%'),
     fontFamily: 'Poppins',
   },
   inputContainer: {
@@ -447,5 +606,12 @@ const styles = StyleSheet.create({
   removeButtonText: {
     fontSize: 16,
     color: '#000',
+  },
+  customButton: {
+    backgroundColor: '#007BFF', // Customize the button color
+    padding: 10,
+    borderRadius: wp('2%'),
+    width: wp('90%'),
+    backgroundColor: '#E1EBFF',
   },
 });

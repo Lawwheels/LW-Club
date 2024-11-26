@@ -16,39 +16,18 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import {useNavigation, CommonActions} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import CustomHeader from '../../../shared/CustomHeader';
-import navigationStrings from '../../constants/navigationStrings';
-import {clearUser} from '../../redux/reducers/auth/authSlice';
-import {useGetAdvocateQuery} from '../../redux/api/api';
+import {useGetAdviseSeekerQuery} from '../../redux/api/api';
 
-const Account = () => {
+const UserAccount = () => {
   const navigation = useNavigation();
-  const dispatch = useDispatch();
 
-  const {data, error, isLoading} = useGetAdvocateQuery();
+  const {data, error, isLoading} = useGetAdviseSeekerQuery();
   console.log(data);
   console.log(error);
 
-  function getLastJobTitle(userData) {
-    // Check if experiences exist and are not empty
-    if (
-      userData?.data[0]?.experiences &&
-      userData?.data[0]?.experiences?.length > 0
-    ) {
-      // Get the last experience in the array
-      const lastExperience =
-        userData?.data[0]?.experiences[
-          userData?.data[0]?.experiences?.length - 1
-        ];
-
-      // Return the jobTitle
-      return lastExperience.jobTitle;
-    } else {
-      return 'No experiences found.'; // Return a fallback value if no experiences are present
-    }
-  }
   if (isLoading) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -98,6 +77,7 @@ const Account = () => {
       });
     }
   };
+  console.log(data);
   return (
     <>
       <CustomHeader
@@ -114,17 +94,17 @@ const Account = () => {
           <View style={styles.profileDetails}>
             <Image
               source={
-                data && data?.data[0]?.profilePic && data.data[0].profilePic.url
-                  ? {uri: data.data[0].profilePic.url}
-                  : require('../../../assets/images/avatar.png')
+                data && data?.data?.profilePic && data.data.profilePic.url
+                  ? {uri: data.data.profilePic.url}
+                  : require('../../../assets/images/user1.png')
               }
               style={styles.profileImage}
             />
             <View>
-              <Text style={styles.profileName}>
-                {data && data?.data[0]?.name}
+              <Text style={styles.profileName}>{data && data?.data?.name}</Text>
+              <Text style={styles.profileTitle}>
+                {data && data?.data?.email}
               </Text>
-              <Text style={styles.profileTitle}>{getLastJobTitle(data)}</Text>
             </View>
           </View>
           {/* <TouchableOpacity style={styles.viewProfileButton}>
@@ -139,41 +119,36 @@ const Account = () => {
         </LinearGradient>
 
         {/* Profile Actions */}
-
         <View style={styles.actionsRow}>
-          <View
-            style={[
-              styles.cardContainer,
-              {paddingHorizontal: 10, paddingVertical: 5},
-            ]}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('ViewAdvocateProfile')}>
-              <Image
-                source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
-                style={{width: 24, height: 24}}
-              />
-              <Text style={[styles.actionText, {color: '#294776'}]}>
-                My Profile
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('UserProfile')}>
+            <Image
+              source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
+              style={{width: 24, height: 24}}
+            />
+            <Text style={[styles.actionText, {color: '#294776'}]}>
+              My Profile
+            </Text>
+          </TouchableOpacity>
 
-          <View
-            style={[
-              styles.cardContainer,
-              {paddingHorizontal: 15, paddingVertical: 5},
-            ]}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={handleLogout}>
-              <Image
-                source={require('../../../assets/images/icons/logout.png')} // Path to the profile image
-                style={{width: 24, height: 24}}
-              />
-              <Text style={[styles.actionText, {color: 'red'}]}>Logout</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.actionButton}>
+            <Image
+              source={require('../../../assets/images/icons/add-square.png')} // Path to the profile image
+              style={{width: 24, height: 24}}
+            />
+            <Text style={[styles.actionText, {color: '#294776'}]}>
+              Add Account
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
+            <Image
+              source={require('../../../assets/images/icons/logout.png')} // Path to the profile image
+              style={{width: 24, height: 24}}
+            />
+            <Text style={[styles.actionText, {color: 'red'}]}>Logout</Text>
+          </TouchableOpacity>
         </View>
 
         {/* App Settings */}
@@ -240,9 +215,7 @@ const Account = () => {
         <View>
           <Text style={styles.sectionTitle}>More Information</Text>
           <View style={styles.menuItemContainer}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('AboutUs')}>
+            <TouchableOpacity style={styles.menuItem}  onPress={() => navigation.navigate('AboutUs')}>
               <Image
                 source={require('../../../assets/images/account/info-circle.png')} // Path to the profile image
                 style={styles.icon}
@@ -268,9 +241,7 @@ const Account = () => {
               />
             </TouchableOpacity>
             <View style={styles.horizontalLine} />
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('HelpSupport')}>
+            <TouchableOpacity style={styles.menuItem} onPress={()=>navigation.navigate("HelpSupport")}>
               <Image
                 source={require('../../../assets/images/account/help.png')} // Path to the profile image
                 style={styles.icon}
@@ -359,7 +330,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     fontWeight: '400',
     fontSize: wp('3.2%'),
-    // width:wp('36%')
     width: wp('90%'),
   },
   viewProfileButton: {
@@ -380,15 +350,14 @@ const styles = StyleSheet.create({
   },
   actionsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: hp('1.5%'),
   },
   actionButton: {
     alignItems: 'center',
-    // justifyContent: 'center',
+    justifyContent: 'center',
     padding: wp('2%'),
-    // flex: 1,
+    flex: 1,
     marginHorizontal: wp('1%'),
     // elevation: 2,
   },
@@ -446,17 +415,6 @@ const styles = StyleSheet.create({
     width: 27,
     height: hp('3.6%'),
   },
-  cardContainer: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    // padding: wp('2%'),
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-    marginHorizontal: 10,
-  },
 });
 
-export default Account;
+export default UserAccount;

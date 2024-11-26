@@ -95,11 +95,11 @@ export default UpdateBio = ({navigation}) => {
         })
         .filter(Boolean);
       console.log('selectedIds', selectedIds);
-      setSpecialization(selectedIds|| []);
+      setSpecialization(selectedIds || []);
     }
   }, [data, specializationData]);
 
-  
+  // console.log("practiceAreaData",practiceAreaData)
   useEffect(() => {
     if (data && data.data[0] && practiceAreaData?.data) {
       const selectedIds = data.data[0].userPracticeAreas
@@ -118,7 +118,7 @@ export default UpdateBio = ({navigation}) => {
         })
         .filter(Boolean);
       console.log('selectedIds', selectedIds);
-      setSelectedPracticeArea(selectedIds|| []);
+      setSelectedPracticeArea(selectedIds || []);
     }
   }, [data, practiceAreaData]);
 
@@ -136,7 +136,7 @@ export default UpdateBio = ({navigation}) => {
 
       setSelectedLanguage(languageIds.filter(Boolean) || []);
     }
-  }, [data]);
+  }, [data, language]);
 
   // Handle loading state
   if (loading && specializationLoading && practiceAreaLoading) {
@@ -146,16 +146,7 @@ export default UpdateBio = ({navigation}) => {
       </View>
     );
   }
-  // Check for loading state
-  //   if (specializationLoading) {
-  //     return (
-  //       <View style={styles.loadingContainer}>
-  //         <ActivityIndicator size="large" color="#0000ff" />
-  //       </View>
-  //     );
-  //   }
 
-  // Handle error state
   if (error) {
     console.log(error);
     return <Text>An error occurred: {error.message}</Text>;
@@ -192,7 +183,6 @@ export default UpdateBio = ({navigation}) => {
     error: practiceAreaError,
   } = useGetPracticeAreaQuery();
   //   console.log(specializationData);
-  // console.log("practiceAreaData",data.data[0])
 
   const practiceItems =
     practiceAreaData?.data?.map(item => ({
@@ -200,7 +190,7 @@ export default UpdateBio = ({navigation}) => {
       name: item.name,
     })) || [];
 
-    console.log("practiceArea",practiceItems)
+  console.log('practiceArea', practiceItems);
 
   const specialisationItems =
     specializationData?.data?.map(item => ({
@@ -254,26 +244,28 @@ export default UpdateBio = ({navigation}) => {
           initialValues={initialValues}
           validationSchema={validationSchema}
           onSubmit={async (values, {setSubmitting}) => {
+            console.log('onSubmit triggered with values:', values);
             const languages = values.language.map(id => languageIdToName[id]);
+
             setSubmitting(true);
             try {
               const updateData = {
                 name: values.name,
                 location: values.location,
-                practiceArea:selectedPracticeArea,
-                // isProfileVisible: values.isProfileVisible,
+                practiceArea: selectedPracticeArea,
                 total_cases: values.total_cases,
                 experience_year: values.experience_year,
                 language: languages,
                 specialization: specialization,
                 ...(values.headLine && {headLine: values.headLine}), // Include headLine only if it has a value
               };
-              const res = await updateAdvocateBio(updateData).unwrap();
+              console.log(updateData);
+              const res = await updateAdvocateBio(updateData);
               console.log(res);
-              if (res && res?.success) {
+              if (res && res?.data.success) {
                 showMessage({
                   message: 'Success',
-                  description: res?.message,
+                  description: res?.data?.message,
                   type: 'success',
                   titleStyle: {fontFamily: 'Poppins SemiBold'},
                   textStyle: {fontFamily: 'Poppins'},
@@ -330,7 +322,6 @@ export default UpdateBio = ({navigation}) => {
               {errors.name && (
                 <Text style={styles.errorText}>{errors.name}</Text>
               )}
-
               <Text style={styles.inputLabel}>Email</Text>
               <CustomText
                 placeholder="Enter Email"
@@ -351,7 +342,6 @@ export default UpdateBio = ({navigation}) => {
                 placeholderTextStyle={{color: '#7F7F80'}}
                 keyboardType="number"
               />
-
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Country</Text>
                 <SelectList
@@ -376,7 +366,6 @@ export default UpdateBio = ({navigation}) => {
                   </Text>
                 )}
               </View>
-
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>State</Text>
                 <SelectList
@@ -431,7 +420,6 @@ export default UpdateBio = ({navigation}) => {
                 placeholderTextStyle={{color: '#7F7F80'}}
                 keyboardType="number"
               />
-
               <Text style={styles.inputLabel}>Total Year Experience</Text>
               <CustomText
                 placeholder="Enter Answer"
@@ -442,7 +430,6 @@ export default UpdateBio = ({navigation}) => {
                 placeholderTextStyle={{color: '#7F7F80'}}
                 keyboardType="number"
               />
-
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Headline</Text>
 
@@ -465,9 +452,8 @@ export default UpdateBio = ({navigation}) => {
                   <Text style={styles.errorText}>{errors.headLine}</Text>
                 )}
               </View>
-
               <Text style={styles.inputLabel}>Specialization</Text>
-              <MultiSelect
+              {/* <MultiSelect
                 hideTags
                 items={specialisationItems}
                 uniqueKey="id"
@@ -475,7 +461,7 @@ export default UpdateBio = ({navigation}) => {
                   setSpecialization(val);
                   setFieldValue('specialization', val);
                 }}
-                selectedItems={specialization}
+                selectedItems={specialization || []}
                 selectText="Select Specialization"
                 searchInputPlaceholderText="Search Items..."
                 altFontFamily="Poppins"
@@ -564,7 +550,104 @@ export default UpdateBio = ({navigation}) => {
                     </View>
                   );
                 })}
+              </View> */}
+              <MultiSelect
+                hideTags
+                items={specialisationItems}
+                uniqueKey="id"
+                onSelectedItemsChange={val => {
+                  setSpecialization(val);
+                  setFieldValue('specialization', val);
+                }}
+                selectedItems={specialization || []}
+                selectText="Select Specialization"
+                searchInputPlaceholderText="Search Items..."
+                altFontFamily="Poppins"
+                tagBorderColor="#CCC"
+                tagTextColor="#CCC"
+                selectedItemTextColor="#CCC"
+                selectedItemIconColor="#CCC"
+                itemTextColor="#000"
+                displayKey="name"
+                searchInputStyle={{
+                  color: '#000',
+                  fontFamily: 'Poppins',
+                }}
+                hideSubmitButton={true}
+                styleInputGroup={styles.styleInputGroup}
+                styleDropdownMenuSubsection={styles.styleDropdownMenuSubsection}
+                styleMainWrapper={styles.styleMainWrapper}
+                styleItemsContainer={{
+                  borderColor: '#fff',
+                  backgroundColor: '#E1EBFF',
+                  borderRadius: wp('3%'),
+                }}
+                flatListProps={{
+                  renderItem: ({item}) => {
+                    const isSelected = specialization.includes(item.id);
+                    return (
+                      <TouchableOpacity
+                        style={[
+                          {padding: 10},
+                          {backgroundColor: isSelected ? '#E1EBFF' : '#E1EBFF'},
+                        ]}
+                        onPress={() => {
+                          const newSelectedItems = isSelected
+                            ? specialization.filter(id => id !== item.id)
+                            : [...specialization, item.id];
+                          setSpecialization(newSelectedItems);
+                          setFieldValue('specialization', newSelectedItems);
+                        }}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                          }}>
+                          <Text
+                            style={[
+                              styles.itemText,
+                              {
+                                color: isSelected ? '#17316D' : '#000',
+                                fontFamily: 'Poppins',
+                              },
+                            ]}>
+                            {item.name}
+                          </Text>
+                          {isSelected && (
+                            <Image
+                              source={require('../../../../assets/images/tick-circle.png')}
+                              style={{width: 20, height: 20}}
+                            />
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  },
+                }}
+              />
+              <View style={styles.tabsContainer}>
+                {specialization?.map(itemId => {
+                  const item = specialisationItems.find(i => i.id === itemId);
+                  if (!item) return null;
+                  return (
+                    <View key={item.id} style={styles.tab}>
+                      <Text style={styles.tabText}>{item.name}</Text>
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => {
+                          const updatedItems = specialization.filter(
+                            id => id !== itemId,
+                          );
+                          setSpecialization(updatedItems);
+                          setFieldValue('specialisation', updatedItems);
+                        }}>
+                        <Text style={styles.removeButtonText}>×</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                })}
               </View>
+
               <View>
                 <Text style={styles.inputLabel}>Languages</Text>
 
@@ -676,105 +759,113 @@ export default UpdateBio = ({navigation}) => {
                 </View>
               </View>
               <View>
-              <Text style={styles.inputLabel}>Practice Area</Text>
-              <MultiSelect
-                hideTags
-                items={practiceItems}
-                uniqueKey="id"
-                onSelectedItemsChange={val => {
-                  setSelectedPracticeArea(val);
-                  setFieldValue('practiceArea', val);
-                }}
-                selectedItems={selectedPracticeArea}
-                selectText="Select Practice Area"
-                searchInputPlaceholderText="Search Items..."
-                altFontFamily="Poppins"
-                tagBorderColor="#CCC"
-                tagTextColor="#CCC"
-                selectedItemTextColor="#CCC"
-                selectedItemIconColor="#CCC"
-                itemTextColor="#000"
-                displayKey="name"
-                searchInputStyle={{
-                  color: '#000',
-                  fontFamily: 'Poppins',
-                }}
-                // submitButtonColor="#000"
-                submitButtonText=""
-                hideSubmitButton={true}
-                styleInputGroup={styles.styleInputGroup}
-                styleDropdownMenuSubsection={styles.styleDropdownMenuSubsection}
-                styleMainWrapper={styles.styleMainWrapper}
-                styleItemsContainer={{
-                  borderColor: '#fff',
-                  backgroundColor: '#E1EBFF',
-                  borderRadius: wp('3%'),
-                }}
-                flatListProps={{
-                  renderItem: ({item}) => {
-                    const isSelected = selectedPracticeArea.includes(item.id);
-                    return (
-                      <TouchableOpacity
-                        style={[
-                          {padding: 10},
-                          {backgroundColor: isSelected ? '#E1EBFF' : '#E1EBFF'},
-                        ]}
-                        onPress={() => {
-                          const newSelectedItems = isSelected
-                            ? selectedPracticeArea.filter(id => id !== item.id)
-                            : [...selectedPracticeArea, item.id];
-                          setSelectedPracticeArea(newSelectedItems);
-                          setFieldValue('practiceArea', newSelectedItems);
-                        }}>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
+                <Text style={styles.inputLabel}>Practice Area</Text>
+                <MultiSelect
+                  hideTags
+                  items={practiceItems}
+                  uniqueKey="id"
+                  onSelectedItemsChange={val => {
+                    setSelectedPracticeArea(val);
+                    setFieldValue('practiceArea', val);
+                  }}
+                  selectedItems={selectedPracticeArea || []}
+                  selectText="Select Practice Area"
+                  searchInputPlaceholderText="Search Items..."
+                  altFontFamily="Poppins"
+                  tagBorderColor="#CCC"
+                  tagTextColor="#CCC"
+                  selectedItemTextColor="#CCC"
+                  selectedItemIconColor="#CCC"
+                  itemTextColor="#000"
+                  displayKey="name"
+                  searchInputStyle={{
+                    color: '#000',
+                    fontFamily: 'Poppins',
+                  }}
+                  // submitButtonColor="#000"
+                  submitButtonText=""
+                  hideSubmitButton={true}
+                  styleInputGroup={styles.styleInputGroup}
+                  styleDropdownMenuSubsection={
+                    styles.styleDropdownMenuSubsection
+                  }
+                  styleMainWrapper={styles.styleMainWrapper}
+                  styleItemsContainer={{
+                    borderColor: '#fff',
+                    backgroundColor: '#E1EBFF',
+                    borderRadius: wp('3%'),
+                  }}
+                  flatListProps={{
+                    renderItem: ({item}) => {
+                      const isSelected = selectedPracticeArea.includes(item.id);
+                      return (
+                        <TouchableOpacity
+                          style={[
+                            {padding: 10},
+                            {
+                              backgroundColor: isSelected
+                                ? '#E1EBFF'
+                                : '#E1EBFF',
+                            },
+                          ]}
+                          onPress={() => {
+                            const newSelectedItems = isSelected
+                              ? selectedPracticeArea.filter(
+                                  id => id !== item.id,
+                                )
+                              : [...selectedPracticeArea, item.id];
+                            setSelectedPracticeArea(newSelectedItems);
+                            setFieldValue('practiceArea', newSelectedItems);
                           }}>
-                          <Text
-                            style={[
-                              styles.itemText,
-                              {
-                                color: isSelected ? '#17316D' : '#000',
-                                fontFamily: 'Poppins',
-                              },
-                            ]}>
-                            {item.name}
-                          </Text>
-                          {isSelected && (
-                            <Image
-                              source={require('../../../../assets/images/tick-circle.png')}
-                              style={{width: 20, height: 20}}
-                            />
-                          )}
-                        </View>
-                      </TouchableOpacity>
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              justifyContent: 'space-between',
+                            }}>
+                            <Text
+                              style={[
+                                styles.itemText,
+                                {
+                                  color: isSelected ? '#17316D' : '#000',
+                                  fontFamily: 'Poppins',
+                                },
+                              ]}>
+                              {item.name}
+                            </Text>
+                            {isSelected && (
+                              <Image
+                                source={require('../../../../assets/images/tick-circle.png')}
+                                style={{width: 20, height: 20}}
+                              />
+                            )}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    },
+                  }}
+                />
+                <View style={styles.tabsContainer}>
+                  {selectedPracticeArea.map(itemId => {
+                    const item = practiceItems.find(i => i.id === itemId);
+                    if (!item) return null;
+                    return (
+                      <View key={item.id} style={styles.tab}>
+                        <Text style={styles.tabText}>{item.name}</Text>
+                        <TouchableOpacity
+                          style={styles.removeButton}
+                          onPress={() => {
+                            const updatedItems = selectedPracticeArea.filter(
+                              id => id !== itemId,
+                            );
+                            setSelectedPracticeArea(updatedItems);
+                            setFieldValue('practiceAreas', updatedItems);
+                          }}>
+                          <Text style={styles.removeButtonText}>×</Text>
+                        </TouchableOpacity>
+                      </View>
                     );
-                  },
-                }}
-              />
-              <View style={styles.tabsContainer}>
-                {selectedPracticeArea.map(itemId => {
-                  const item = practiceItems.find(i => i.id === itemId);
-                  if (!item) return null;
-                  return (
-                    <View key={item.id} style={styles.tab}>
-                      <Text style={styles.tabText}>{item.name}</Text>
-                      <TouchableOpacity
-                        style={styles.removeButton}
-                        onPress={() => {
-                          const updatedItems = selectedPracticeArea.filter(
-                            id => id !== itemId,
-                          );
-                          setSelectedPracticeArea(updatedItems);
-                          setFieldValue('practiceAreas', updatedItems);
-                        }}>
-                        <Text style={styles.removeButtonText}>×</Text>
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
-              </View>
+                  })}
+                </View>
               </View>
               <View style={{marginVertical: hp('3%')}}>
                 <CustomButton

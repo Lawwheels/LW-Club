@@ -11,6 +11,7 @@ import {
   FlatList,
   ImageBackground,
   ScrollView,
+  StatusBar,
   ActivityIndicator,
 } from 'react-native';
 import {
@@ -79,26 +80,6 @@ export default function UserSchedule() {
     return <Text>An error occurred: {error.message}</Text>;
   }
 
-  const consultations = [
-    {
-      id: '1',
-      name: 'Kajal Gupta',
-      date: '28th Dec, 2024 - 10:00 AM',
-      description:
-        'Kajal Gupta is a seasoned civil lawyer with over 5 years of experience in specific civil law area.',
-      image: require('../../../assets/images/consultation.png'), // Image path here
-    },
-    {
-      id: '2',
-      name: 'Chris Evans',
-      date: '15th Jan, 2025 - 11:30 AM',
-      description:
-        'Chris Evans has expertise in real estate laws and has represented clients in various high-profile cases.',
-      image: require('../../../assets/images/consultation.png'), // Replace with real image paths
-    },
-    // Add more consultations here
-  ];
-
   const weeks = React.useMemo(() => {
     const start = moment(month) // Ensure month is a moment object
       .startOf('month')
@@ -159,6 +140,10 @@ export default function UserSchedule() {
 
   return (
     <>
+     <StatusBar
+        barStyle="light-content" // Options: 'default', 'light-content', 'dark-content'
+        backgroundColor="#1262D2" // Background color for Android
+      />
       <SafeAreaView style={{flex: 1}}>
         <View style={styles.container}>
           <CustomHeader
@@ -277,7 +262,7 @@ export default function UserSchedule() {
                       <ImageBackground
                         source={require('../../../assets/images/consultation.png')}
                         style={styles.consultationCard}
-                        imageStyle={{borderRadius: 16}}>
+                        imageStyle={styles.cardBorder}>
                         <View style={styles.consultationHeader}>
                           <Text
                             style={[styles.consultantName, {color: '#294776'}]}>
@@ -295,12 +280,6 @@ export default function UserSchedule() {
                             />
                           </View>
                         </View>
-                        {/* <Image
-                          source={{uri: item.advocate.avatar}}
-                          style={styles.advocateProfileImage}
-                          resizeMode="cover"
-                        /> */}
-
                         <View
                           style={{
                             flexDirection: 'row',
@@ -342,7 +321,7 @@ export default function UserSchedule() {
 
                         {/* Display Status */}
                         <Text style={styles.consultationDescription}>
-                          {`${item.advocate.name} is a seasoned civil lawyer with over 5 years of experience in specific civil law area.`}
+                          {item.client_legal_issue}
                         </Text>
                       </ImageBackground>
                     );
@@ -493,6 +472,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
+    // paddingTop:hp('0.2%')
   },
   monthHeader: {
     flexDirection: 'row',
@@ -549,6 +529,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111',
   },
+  cardBorder: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 16,
+  },
   recentConsultationContainer: {
     marginHorizontal: wp('5%'),
   },
@@ -560,7 +545,7 @@ const styles = StyleSheet.create({
   },
   consultationCard: {
     width: wp('70%'),
-    height: hp('20%'),
+    height: hp('18%'),
     marginRight: wp('5%'),
     padding: wp('2.7%'),
     justifyContent: 'space-between',

@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Switch,
+  RefreshControl
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
@@ -34,6 +35,7 @@ import CustomDeleteModal from '../../../shared/CustomDeleteModal';
 import navigationStrings from '../../constants/navigationStrings';
 
 const ViewAdvocateProfile = ({navigation}) => {
+  const [refresh,setRefresh]=useState(false);
   const [isProfileVisible, setIsProfileVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('Professional');
   const [isModalVisible, setModalVisible] = useState(false);
@@ -49,6 +51,8 @@ const ViewAdvocateProfile = ({navigation}) => {
   const [deleteModalCertificate, setDeleteModalCertificate] = useState(false);
   const [selectedCertificateId, setSelectedCertificateId] = useState(null);
   const [dropdownVisibleIndex, setDropdownVisibleIndex] = useState(null);
+  const [localCertificates, setLocalCertificates] = useState([]);
+  const [localExperiences, setLocalExperiences] = useState([]);
 
   const toggleDropdown = (index) => {
     setDropdownVisibleIndex(dropdownVisibleIndex === index ? null : index);
@@ -59,13 +63,14 @@ const ViewAdvocateProfile = ({navigation}) => {
   const toggleDropdownCertificate = (index) => {
     setDropdownVisibleCertificate(dropdownVisibleCertificate === index ? null : index);
   };
-  const {data, error, isLoading} = useGetAdvocateQuery();
+  const {data, error, isLoading,refetch} = useGetAdvocateQuery();
   console.log('data', data);
   // console.log(data?.data[0]?.specialization);
   const {
     data: certificateData,
     error: isError,
     isLoading: certificateLoading,
+    refetch: refetchCertificateData,
   } = useGetCertificateQuery();
   const [advocateProfilePic] = useAdvocateProfilePicMutation();
   const [advocateCoverPic] = useAdvocateCoverPicMutation();
@@ -78,8 +83,38 @@ const ViewAdvocateProfile = ({navigation}) => {
 
   const [deleteCertificate] = useDeleteCertificateMutation();
 
+  useEffect(() => {
+    if (certificateData) {
+      setLocalCertificates(certificateData);
+    }
+  }, [certificateData]);
+  useEffect(() => {
+    if (data && data?.data[0] && data?.data[0]?.experiences) {
+      setLocalExperiences(data.data[0].experiences);
+    }
+  }, [data]);
+
+  const pullMe = async () => {
+    try {
+      setRefresh(true); // Show the refresh indicator
+      // Refetch both the certificate and advocate data
+      await Promise.all([
+        refetchCertificateData(), // Refetch certificate data
+        refetch(), // Refetch advocate data
+      ]);
+    } catch (error) {
+      console.error('Error during refetch:', error); // Handle errors if needed
+    } finally {
+      setRefresh(false); // Hide the refresh indicator after both data are fetched
+    }
+  };
+
   const handleDeleteCertificate = async () => {
     try {
+      const updatedCertificates = localCertificates?.data?.filter(
+        (certificate) => certificate._id !== selectedCertificateId
+      );
+      setLocalCertificates(updatedCertificates); 
       const res = await deleteCertificate({id: selectedCertificateId}).unwrap();
       console.log(res);
 
@@ -92,6 +127,7 @@ const ViewAdvocateProfile = ({navigation}) => {
           textStyle: {fontFamily: 'Poppins'},
         });
       } else {
+        setLocalCertificates(certificateData);
         const errorMsg = res.error?.data?.message || 'Something went wrong!';
         showMessage({
           message: 'Error',
@@ -103,6 +139,7 @@ const ViewAdvocateProfile = ({navigation}) => {
       }
     } catch (error) {
       console.error('Failed to delete profile picture: ', error);
+      setLocalCertificates(certificateData);
       const errorMsg =
         error?.response?.data?.error?.data?.message || 'Something went wrong!';
       showMessage({
@@ -306,59 +343,67 @@ const ViewAdvocateProfile = ({navigation}) => {
   const openCoverModal = () => setIsCoverImage(true);
   const closeCoverModal = () => setIsCoverImage(false);
 
+ 
   // const toggleSwitch = async () => {
   //   const newVisibility = !isProfileVisible;
   //   setIsProfileVisible(newVisibility);
-
+  
   //   try {
   //     // Call the API with the updated visibility value
   //     const res = await advocateProfileVisible({
   //       isProfileVisible: newVisibility,
   //     });
   //     console.log(res);
-
+  
   //     if (res && res?.data?.success) {
   //       // Success message
   //       showMessage({
   //         message: 'Success',
   //         description: res?.data?.message,
   //         type: 'success',
-  //         titleStyle: {fontFamily: 'Poppins SemiBold'},
-  //         textStyle: {fontFamily: 'Poppins'},
+  //         titleStyle: { fontFamily: 'Poppins SemiBold' },
+  //         textStyle: { fontFamily: 'Poppins' },
   //       });
   //     } else {
   //       const errorMsg = res.error?.data?.message || 'Something went wrong!';
   //       setIsProfileVisible(false); // Revert state back to false if there's an error
-
+  
   //       // Handle specific error messages and navigate accordingly
-  //       if (errorMsg === 'NOEXPERIENCE!' || errorMsg === 'NOEDUCATION!') {
+  //       if (errorMsg === 'NOEXPERIENCE!') {
   //         showMessage({
   //           message: 'Incomplete Profile',
-  //           description:
-  //             'Please complete your profile experience and education.',
+  //           description: 'Please add your experience to complete your profile.',
   //           type: 'warning',
-  //           titleStyle: {fontFamily: 'Poppins SemiBold'},
-  //           textStyle: {fontFamily: 'Poppins'},
+  //           titleStyle: { fontFamily: 'Poppins SemiBold' },
+  //           textStyle: { fontFamily: 'Poppins' },
   //         });
-  //         navigation.navigate('AdvocateProfile'); // Navigate to AdvocateProfile
+  //         navigation.navigate('AddExperience'); // Navigate to AddExperience screen
+  //       } else if (errorMsg === 'NOEDUCATION!') {
+  //         showMessage({
+  //           message: 'Incomplete Profile',
+  //           description: 'Please add your education to complete your profile.',
+  //           type: 'warning',
+  //           titleStyle: { fontFamily: 'Poppins SemiBold' },
+  //           textStyle: { fontFamily: 'Poppins' },
+  //         });
+  //         navigation.navigate('AddEducation'); // Navigate to AddEducation screen
   //       } else if (errorMsg === 'NOLICENSE!') {
   //         showMessage({
   //           message: 'License Verification Needed',
-  //           description:
-  //             'Please verify your license to make your profile visible.',
+  //           description: 'Please verify your license to make your profile visible.',
   //           type: 'warning',
-  //           titleStyle: {fontFamily: 'Poppins SemiBold'},
-  //           textStyle: {fontFamily: 'Poppins'},
+  //           titleStyle: { fontFamily: 'Poppins SemiBold' },
+  //           textStyle: { fontFamily: 'Poppins' },
   //         });
-  //         navigation.navigate('VerifyAdvocate'); // Navigate to VerifyAdvocate
+  //         navigation.navigate('VerifyAdvocate'); // Navigate to VerifyAdvocate screen
   //       } else {
   //         // General error message
   //         showMessage({
   //           message: 'Error',
   //           description: errorMsg,
   //           type: 'danger',
-  //           titleStyle: {fontFamily: 'Poppins SemiBold'},
-  //           textStyle: {fontFamily: 'Poppins'},
+  //           titleStyle: { fontFamily: 'Poppins SemiBold' },
+  //           textStyle: { fontFamily: 'Poppins' },
   //         });
   //       }
   //     }
@@ -371,12 +416,25 @@ const ViewAdvocateProfile = ({navigation}) => {
   //       message: 'Error',
   //       description: errorMsg,
   //       type: 'danger',
-  //       titleStyle: {fontFamily: 'Poppins SemiBold'},
-  //       textStyle: {fontFamily: 'Poppins'},
+  //       titleStyle: { fontFamily: 'Poppins SemiBold' },
+  //       textStyle: { fontFamily: 'Poppins' },
   //     });
   //   }
   // };
+  
   const toggleSwitch = async () => {
+    if (isProfileVisible) {
+      // Show a message if the profile is already published and prevent toggling
+      showMessage({
+        message: 'Profile Already Published',
+        description: 'You cannot change the visibility of a published profile.',
+        type: 'warning',
+        titleStyle: { fontFamily: 'Poppins SemiBold' },
+        textStyle: { fontFamily: 'Poppins' },
+      });
+      return; // Exit the function to prevent further execution
+    }
+  
     const newVisibility = !isProfileVisible;
     setIsProfileVisible(newVisibility);
   
@@ -422,7 +480,8 @@ const ViewAdvocateProfile = ({navigation}) => {
         } else if (errorMsg === 'NOLICENSE!') {
           showMessage({
             message: 'License Verification Needed',
-            description: 'Please verify your license to make your profile visible.',
+            description:
+              'Please verify your license to make your profile visible.',
             type: 'warning',
             titleStyle: { fontFamily: 'Poppins SemiBold' },
             textStyle: { fontFamily: 'Poppins' },
@@ -580,8 +639,13 @@ const ViewAdvocateProfile = ({navigation}) => {
     });
   };
 
+console.log(certificateData)
   const handleDeleteExperience = async () => {
     try {
+      const updatedExperiences = localExperiences?.filter(
+        (experience) => experience._id !== selectedExperienceId
+      );
+      setLocalExperiences(updatedExperiences); 
       const res = await deleteExperience({id: selectedExperienceId}).unwrap();
       console.log(res);
 
@@ -624,9 +688,10 @@ const ViewAdvocateProfile = ({navigation}) => {
     setSelectedExperienceId(experienceId);
     setDeleteModalVisible(true);
   };
+
   return (
     <>
-      <ScrollView style={styles.container}>
+      <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refresh} onRefresh={pullMe} />}>
         <ImageBackground
           source={
             data && data?.data[0]?.coverPic && data?.data[0]?.coverPic?.url
@@ -900,7 +965,7 @@ const ViewAdvocateProfile = ({navigation}) => {
                 </View>
 
                 {renderExperiences(
-                  data && data?.data[0]?.experiences,
+                  localExperiences,
                   navigation,
                   openDeleteModal,
                   dropdownVisibleIndex, setDropdownVisibleIndex,toggleDropdown
@@ -960,9 +1025,7 @@ const ViewAdvocateProfile = ({navigation}) => {
                       <TouchableOpacity
                         style={{marginRight: 5}}
                         onPress={() =>
-                          navigation.navigate(
-                            navigationStrings.VIEW_ALL_PRACTICE_AREA,
-                          )
+                          navigation.navigate("ViewSkill")
                         }>
                         <Image
                           source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
@@ -1053,7 +1116,8 @@ const ViewAdvocateProfile = ({navigation}) => {
                 </View>
 
                 {renderCertificate(
-                  certificateData && certificateData?.data,
+                  // certificateData && certificateData?.data,
+                  localCertificates && localCertificates?.data,
                   navigation,
                   openDeleteModalCertificate,
                   dropdownVisibleCertificate,setDropdownVisibleCertificate, toggleDropdownCertificate

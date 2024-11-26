@@ -1,14 +1,11 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
   Image,
+  Modal,
   TouchableOpacity,
   StyleSheet,
-  Modal,
-  Dimensions,
-  FlatList,
-  TouchableWithoutFeedback,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
@@ -16,39 +13,26 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import moment from 'moment';
-import Swiper from 'react-native-swiper';
-import LinearGradient from 'react-native-linear-gradient';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import CustomHeader from '../../../shared/CustomHeader';
-import {useGetUserSlotByIdQuery} from '../../redux/api/api';
-
-const {width} = Dimensions.get('window');
+import {showMessage} from 'react-native-flash-message';
+import {useCancelSlotMutation, useGetUserSlotByIdQuery} from '../../redux/api/api';
+import RescheduleModal from './RescheduleModal';
+import {useNavigation} from '@react-navigation/native';
 
 const UserReview = ({route}) => {
   const {id} = route.params;
-  const swiper = useRef();
-  const today = new Date(); // Today's date
-  const [value, setValue] = useState(today); // Default to today's date
-  const [month, setMonth] = useState(moment(today).startOf('month')); // Start of the current month using moment
-  const [week, setWeek] = useState(
-    moment(today).diff(moment(today).startOf('month'), 'weeks'),
-  ); // Current week in the month
-  const [showPicker, setShowPicker] = useState(false);
-  const [selectedTime, setSelectedTime] = useState(null);
+  const navigation = useNavigation();
+  const [cancelVisible, setCancelVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [confirmationVisible, setConfirmationVisible] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState(['phone', 'video']);
+  const [selectedMethod, setSelectedMethod] = useState([]);
+  const [advocateId, setAdvocateId] = useState(null);
 
   const {data, error, isLoading} = useGetUserSlotByIdQuery(id);
-  const toggleMethod = method => {
-    if (selectedMethod.includes(method)) {
-      setSelectedMethod(selectedMethod.filter(item => item !== method));
-    } else {
-      setSelectedMethod([...selectedMethod, method]);
-    }
+  const [cancelSlot]=useCancelSlotMutation();
+
+  // console.log('SlotId', data);
+  const handleGoBack = () => {
+    navigation.goBack();
   };
-  console.log('SlotId', data);
 
   if (isLoading) {
     return (
@@ -66,90 +50,14 @@ const UserReview = ({route}) => {
       </View>
     );
   }
-  const openModal = () => {
-    setModalVisible(true);
+  const openModal = advocateId => {
+    setAdvocateId(advocateId);
+    setModalVisible(true); // Show modal when reschedule button is pressed
   };
-
   const closeModal = () => {
     setModalVisible(false);
   };
 
-  const times = [
-    '09:00 AM-10:00AM',
-    '10:00 AM-11:00AM',
-    '11:00 AM-12:00PM',
-    '01:00 PM-02:00PM',
-    '05:00 PM-06:00PM',
-    '06:00 AM-07:00PM',
-    '09:00 PM-10:00PM',
-    '03:00 PM-04:00PM',
-  ];
-
-  const weeks = React.useMemo(() => {
-    const start = moment(month) // Ensure month is a moment object
-      .startOf('month')
-      .add(week, 'weeks')
-      .startOf('week');
-
-    return [-1, 0, 1].map(adj => {
-      return Array.from({length: 7}).map((_, index) => {
-        const date = moment(start).add(adj, 'week').add(index, 'day');
-        return {
-          weekday: date.format('ddd'), // Format weekday
-          date: date.toDate(), // Convert back to native Date object for comparison later
-        };
-      });
-    });
-  }, [week, month]);
-
-  useEffect(() => {
-    // Scroll to the current week on initial render
-    if (swiper.current) {
-      swiper.current.scrollTo(1, false);
-    }
-  }, []);
-
-  const handleMonthChange = direction => {
-    const newMonth = moment(month).add(direction, 'months'); // Use moment to add months
-    setMonth(newMonth); // Set month as moment object
-    setWeek(0); // Reset the week to 0
-    swiper.current.scrollTo(1, false);
-  };
-
-  const isSameDate = (date1, date2) => {
-    return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
-    );
-  };
-
-  const onDateChange = selectedDate => {
-    setShowPicker(false); // Close the picker modal
-
-    if (selectedDate) {
-      setValue(selectedDate); // Update the selected date
-
-      // Update the month based on the selected date
-      const newMonth = moment(selectedDate).startOf('month');
-      setMonth(newMonth);
-
-      // Calculate the new week based on the selected date
-      const newWeek = moment(selectedDate).diff(
-        moment(newMonth).startOf('month'),
-        'weeks',
-      );
-      setWeek(newWeek >= 0 ? newWeek : 0); // Avoid setting a negative week value
-    }
-  };
-
-  const openConfirmationModal = () => {
-    setModalVisible(false); // Close the reschedule modal
-    setConfirmationVisible(true); // Open the confirmation modal
-  };
-
-  // Function to close the confirmation modal
-  const closeConfirmationModal = () => setConfirmationVisible(false);
   function formatDate(dateString) {
     const date = new Date(dateString);
 
@@ -255,19 +163,89 @@ const UserReview = ({route}) => {
         return null;
     }
   };
+
+  const handleCancel = async () => {
+    try {
+      const res = await cancelSlot({sloteId:id}).unwrap();
+      console.log(res);
+
+      if (res && res?.success) {
+        showMessage({
+          message: 'Success',
+          description: res.message,
+          type: 'success',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
+      } else {
+        const errorMsg = res.error?.data?.message || 'Something went wrong!';
+        showMessage({
+          message: 'Error',
+          description: errorMsg,
+          type: 'danger',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
+      }
+    } catch (error) {
+      console.error('Failed to delete profile picture: ', error);
+      const errorMsg =
+        error?.response?.data?.error?.data?.message || 'Something went wrong!';
+      showMessage({
+        message: 'Error',
+        description: errorMsg,
+        type: 'danger',
+        titleStyle: {fontFamily: 'Poppins SemiBold'},
+        textStyle: {fontFamily: 'Poppins'},
+      });
+    } finally {
+      setCancelVisible(false);
+    }
+  };
   return (
     <>
-      <CustomHeader
+      {/* <CustomHeader
         title={'Details'}
         icon={require('../../../assets/images/back.png')}
-      />
+      /> */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={handleGoBack}
+          style={{marginTop: hp('1.6%')}}>
+          <Image
+            source={require('../../../assets/images/back.png')}
+            style={styles.back}
+          />
+        </TouchableOpacity>
+
+        <View style={styles.titleContainer}>
+          <Text style={styles.headerTitle}>{'Details'}</Text>
+        </View>
+        <TouchableOpacity
+          style={{marginTop: hp('1.6%')}}
+          onPress={() => setCancelVisible(true)}>
+          <Text
+            style={{
+              color: 'red',
+              borderWidth: 1,
+              borderColor: 'red',
+              textAlign: 'center',
+              width: wp('20%'),
+              height: hp('4%'),
+              padding: 5,
+              borderRadius: 10,
+              fontFamily: 'Poppins',
+            }}>
+            {'Cancel'}
+          </Text>
+        </TouchableOpacity>
+      </View>
       <ScrollView style={{flex: 1}}>
         <View style={styles.container}>
           {/* Profile Header */}
-
           <View style={styles.subContainer}>
             <View style={styles.profileSection}>
-            <Image
+              <Image
                 source={
                   data?.data?.advocate?.avatar
                     ? {uri: data?.data?.advocate?.avatar}
@@ -320,15 +298,13 @@ const UserReview = ({route}) => {
               )}
 
               {/* Appointment Mode */}
-               {/* Appointment Mode */}
-               {renderServiceTypeButtons()}
+              {renderServiceTypeButtons()}
 
               {/* Action Buttons */}
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={styles.rescheduleButton}
-                  // onPress={openModal}
-                  >
+                  onPress={() => openModal(data?.data?.advocate?._id)}>
                   <Text style={[styles.buttonText, {color: '#000'}]}>
                     Reschedule
                   </Text>
@@ -339,200 +315,37 @@ const UserReview = ({route}) => {
               </View>
             </View>
           </View>
+          <RescheduleModal
+            id={id}
+            advocateId={advocateId}
+            modalVisible={modalVisible}
+            closeModal={closeModal}
+            setModalVisible={setModalVisible}
+          />
           <Modal
-            visible={modalVisible}
             transparent={true}
             animationType="slide"
-            onRequestClose={closeModal}>
+            visible={cancelVisible}
+            onRequestClose={() => setCancelVisible(false)}>
             <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Reschedule</Text>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                  }}>
-                  <Text style={styles.sectionTitle}>Select a Date</Text>
-                  {/* Calendar Icon */}
-                  <TouchableOpacity onPress={() => setShowPicker(true)}>
-                    <Image
-                      source={require('../../../assets/images/schedule/calendarIcon.png')} // Your calendar icon
-                      style={{width: 24, height: 24, marginHorizontal: 5}} // Adjust the size and spacing
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.monthHeader}>
-                  <TouchableOpacity onPress={() => handleMonthChange(-1)}>
-                    <Image
-                      source={require('../../../assets/images/schedule/chevron-left.png')}
-                      style={{width: 24, height: 20}}
-                    />
-                  </TouchableOpacity>
-                  <Text style={styles.monthTitle}>
-                    {month.format('MMMM YYYY')}
-                  </Text>
-                  <TouchableOpacity onPress={() => handleMonthChange(1)}>
-                    <Image
-                      source={require('../../../assets/images/schedule/chevron-right.png')}
-                      style={{width: 24, height: 20}}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                {/* Swiper for Weekly Dates */}
-                <View style={styles.picker}>
-                  <Swiper
-                    index={1}
-                    ref={swiper}
-                    loop={false}
-                    showsPagination={false}
-                    onIndexChanged={ind => {
-                      if (ind === 1) return;
-                      setTimeout(() => {
-                        const newIndex = ind - 1;
-                        const newWeek = week + newIndex;
-                        setWeek(newWeek);
-                        setValue(moment(value).add(newIndex, 'week').toDate());
-                        swiper.current.scrollTo(1, false);
-                      }, 100);
-                    }}>
-                    {weeks.map((dates, index) => (
-                      <View style={styles.itemRow} key={index}>
-                        {dates.map((item, dateIndex) => {
-                          const isActive = isSameDate(value, item.date);
-                          const isSaturday = item.weekday === 'Sat';
-                          const isSunday = item.weekday === 'Sun';
-                          return (
-                            <TouchableWithoutFeedback
-                              key={dateIndex}
-                              onPress={() => setValue(item.date)}>
-                              <View
-                                style={[
-                                  styles.item,
-                                  isActive && {
-                                    backgroundColor: '#1262D2',
-                                    borderColor: '#1262D2',
-                                  },
-                                  (isSaturday || isSunday) && {
-                                    marginRight: isSaturday ? 15 : 0,
-                                  },
-                                ]}>
-                                <Text
-                                  style={[
-                                    styles.itemWeekday,
-                                    isActive && {color: '#fff'},
-                                  ]}>
-                                  {item.weekday}
-                                </Text>
-                                <Text
-                                  style={[
-                                    styles.itemDate,
-                                    isActive && {color: '#fff'},
-                                  ]}>
-                                  {item.date.getDate()}
-                                </Text>
-                              </View>
-                            </TouchableWithoutFeedback>
-                          );
-                        })}
-                      </View>
-                    ))}
-                  </Swiper>
-                </View>
-
-                {showPicker && (
-                  <DateTimePickerModal
-                    isVisible={showPicker}
-                    mode="date"
-                    date={value}
-                    onConfirm={onDateChange}
-                    onCancel={() => setShowPicker(false)}
-                  />
-                )}
-
-                <Text style={[styles.sectionTitle, {marginVertical: 5}]}>
-                  Select a Time
+              <View style={styles.deleteContent}>
+                <Text style={styles.deleteTitle}>{'Confirm Cancel'}</Text>
+                <Text style={styles.modalMessage}>
+                  Are you sure you want to cancel this slot?
                 </Text>
-                <FlatList
-                  numColumns={2}
-                  data={times}
-                  renderItem={({item}) => (
-                    <TouchableOpacity
-                      style={[
-                        styles.timeItem,
-                        selectedTime === item && styles.selectedTime,
-                      ]}
-                      onPress={() => setSelectedTime(item)}>
-                      <Text
-                        style={
-                          selectedTime === item
-                            ? styles.selectedTimeText
-                            : styles.timeText
-                        }>
-                        {item}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                  keyExtractor={item => item}
-                />
-                <LinearGradient
-                  colors={['#1262D2', '#17316D']}
-                  start={{x: 0, y: 0}}
-                  end={{x: 1, y: 0}}
-                  style={styles.closeButton}>
-                  <TouchableOpacity 
-                  onPress={openConfirmationModal}
+
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={styles.confirmButton}
+                    onPress={handleCancel}
                   >
-                    <Text style={styles.buttonText}>Reshedule</Text>
+                    <Text style={styles.buttonText}>Confirm</Text>
                   </TouchableOpacity>
-                </LinearGradient>
-              </View>
-            </View>
-          </Modal>
-
-          <Modal
-            visible={confirmationVisible}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={closeConfirmationModal}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                {/* Image at the top */}
-                <Image
-                  source={require('../../../assets/images/lawyer.png')} // replace with the correct path to your image
-                  style={{width: wp(30), height: hp(30), alignSelf: 'center'}}
-                />
-                <Text style={styles.modalTitleText}>
-                  Are you sure you want to reschedule this appointment?
-                </Text>
-                <Text style={styles.modalText}>
-                  Rescheduling will notify the client, and the current booking
-                  time will be changed.
-                </Text>
-                {/* Cancel and Confirm Buttons */}
-                <View style={styles.buttonGroup}>
                   <TouchableOpacity
                     style={styles.cancelButton}
-                    onPress={closeConfirmationModal}>
-                    <Text
-                      style={{
-                        fontFamily: 'Poppins',
-                        fontWeight: '400',
-                        fontSize: 14,
-                      }}>
-                      Cancel
-                    </Text>
+                    onPress={() => setCancelVisible(false)}>
+                    <Text style={styles.buttonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <LinearGradient
-                    colors={['#1262D2', '#17316D']}
-                    start={{x: 0, y: 0}}
-                    end={{x: 1, y: 0}}
-                    style={styles.confirmButton}>
-                    <TouchableOpacity onPress={closeConfirmationModal}>
-                      <Text style={styles.buttonText}>Confirm</Text>
-                    </TouchableOpacity>
-                  </LinearGradient>
                 </View>
               </View>
             </View>
@@ -548,7 +361,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F3F7FF',
     paddingTop: hp('8%'),
-    height:hp('92%')
+    height: hp('92%'),
   },
   subContainer: {
     flex: 1,
@@ -682,164 +495,16 @@ const styles = StyleSheet.create({
     width: wp(35),
     height: hp('6.5%'),
   },
-  buttonText: {
-    fontSize: wp('3.73%'),
-    fontFamily: 'Poppins SemiBold',
-  },
   sectionTitle: {
     fontSize: wp('4%'),
     color: '#000',
     fontFamily: 'Poppins SemiBold',
     // marginTop: 10,
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: wp('95%'),
-    paddingHorizontal: wp('5%'),
-    paddingVertical: wp('5%'),
-    backgroundColor: '#FFF',
-    borderRadius: wp('1%'),
-    // alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: wp('4.5%'),
-    fontFamily: 'Poppins SemiBold',
-    marginBottom: hp('1%'),
-    textAlign: 'center',
-  },
-  modalText: {
-    fontSize: wp('4%'),
-    fontWeight: '400',
-    fontFamily: 'Poppins',
-    textAlign: 'center',
-    marginBottom: hp('5%'),
-  },
-  closeButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: hp('2%'),
-    borderRadius: wp('1.5%'),
-    marginVertical: hp('4%'),
-  },
   buttonText: {
     color: '#fff',
     fontSize: wp('3.5%'),
     fontFamily: 'Poppins SemiBold',
-  },
-  monthHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: wp('4%'),
-    paddingVertical: hp('1%'),
-  },
-  monthTitle: {
-    fontSize: wp('4.5%'),
-    fontFamily: 'Poppins SemiBold',
-    color: '#294776',
-  },
-
-  picker: {
-    // flex: 1,
-    width: wp('95%'),
-    maxHeight: hp('10%'),
-    paddingVertical: hp('1%'),
-    // paddingLeft: 5,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  item: {
-    flex: 1,
-    height: hp('7%'),
-    marginHorizontal: wp('1%'),
-    paddingVertical: hp('0.5%'),
-    // paddingHorizontal: 4,
-    borderWidth: 1,
-    borderRadius: wp('1%'),
-    borderColor: '#e3e3e3',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  itemRow: {
-    width: width, // Adjust width here to leave space for calendar icon
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: wp('3%'),
-  },
-  itemWeekday: {
-    fontSize: wp('3%'),
-    fontWeight: '500',
-    color: '#737373',
-    fontFamily: 'Poppins',
-    // marginBottom: 4,
-  },
-  itemDate: {
-    fontSize: wp('3%'),
-    fontFamily: 'Poppins',
-    fontWeight: 'bold',
-    color: '#111',
-  },
-  selectedDate: {
-    backgroundColor: '#1262D2',
-  },
-  dateText: {
-    color: 'black',
-  },
-  selectedDateText: {
-    color: 'white',
-  },
-  timeItem: {
-    padding: hp('1.5%'),
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: wp('1%'),
-    margin: 5,
-    flex: 1,
-    alignItems: 'center',
-  },
-  selectedTime: {
-    backgroundColor: '#1262D2',
-  },
-  timeText: {
-    color: 'black',
-    fontFamily: 'Poppins',
-  },
-  selectedTimeText: {
-    color: 'white',
-    fontFamily: 'Poppins',
-  },
-  buttonGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-  },
-  cancelButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#000',
-    padding: hp('1.5%'),
-    marginRight: wp('1.5%'),
-    borderRadius: wp('1.5%'),
-    alignItems: 'center',
-  },
-  confirmButton: {
-    flex: 1,
-    padding: hp('1.5%'),
-    borderRadius: wp('1.5%'),
-    alignItems: 'center',
-  },
-  modalTitleText: {
-    fontSize: 18,
-    color: '#294776',
-    fontFamily: 'Poppins SemiBold',
-    marginBottom: 10,
-    textAlign: 'center',
   },
   starsContainer: {
     flexDirection: 'row',
@@ -849,6 +514,79 @@ const styles = StyleSheet.create({
     width: 18, // Adjust to your image size
     height: 18, // Adjust to your image size
     marginRight: 2,
+  },
+  header: {
+    height: hp(9),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#F3F7FF',
+    // backgroundColor:'red',
+    elevation: 0.1,
+    paddingHorizontal: wp('2.5%'),
+    paddingVertical: hp('0.5%'),
+  },
+  back: {
+    width: wp('6%'),
+    height: hp('4%'),
+  },
+  titleContainer: {
+    flex: 1, // Let the title take up the remaining space
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: wp('4.5%'),
+    marginLeft: 45,
+    textAlign: 'center',
+    fontFamily: 'Poppins SemiBold',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.8)',
+  },
+  modalMessage: {
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: 'Poppins',
+  },
+  deleteContent: {
+    width: 300,
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  deleteTitle: {
+    fontSize: 18,
+    // fontWeight: 'bold',
+    marginBottom: 10,
+    fontFamily: 'Poppins SemiBold',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  confirmButton: {
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 5,
+  },
+  cancelButton: {
+    backgroundColor: 'gray',
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginLeft: 5,
+  },
+  buttonText: {
+    color: 'white',
+    textAlign: 'center',
+    fontFamily: 'Poppins',
   },
 });
 

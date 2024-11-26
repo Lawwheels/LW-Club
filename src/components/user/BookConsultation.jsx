@@ -441,28 +441,7 @@ const BookConsultation = ({route}) => {
         {times?.length === 0 ? (
           <Text style={styles.noCreatedSlotMessage}>No available slot</Text> // If no data is available
         ) : (
-          // <FlatList
-          //   numColumns={2}
-          //   data={times}
-          //   renderItem={({item}) => (
-          //     <TouchableOpacity
-          //       style={[
-          //         styles.timeItem,
-          //         selectedTime === item && styles.selectedTime,
-          //       ]}
-          //       onPress={() => setSelectedTime(item)}>
-          //       <Text
-          //         style={
-          //           selectedTime === item
-          //             ? styles.selectedTimeText
-          //             : styles.timeText
-          //         }>
-          //         {item.time}
-          //       </Text>
-          //     </TouchableOpacity>
-          //   )}
-          //   keyExtractor={item => item._id}
-          // />
+         
           <FlatList
             numColumns={2}
             data={times}

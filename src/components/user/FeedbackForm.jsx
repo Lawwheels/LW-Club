@@ -6,22 +6,97 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
+import {Formik} from 'formik';
+import * as Yup from 'yup';
+import {showMessage} from 'react-native-flash-message';
 import LinearGradient from 'react-native-linear-gradient';
+import {
+  useGetUserAdvocateByIdQuery,
+  useGiveAdvocateReviewMutation,
+} from '../../redux/api/api';
 import CustomHeader from '../../../shared/CustomHeader';
 
-const FeedbackForm = () => {
-  const [rating, setRating] = useState(4); // Default rating
-  const [comment, setComment] = useState('');
-  const [recommendation, setRecommendation] = useState(null); // Yes or No
+const FeedbackForm = ({route}) => {
+  const {id} = route.params || {};
+  const [loading, setLoading] = useState(false);
 
-  const handleRating = selectedRating => {
-    setRating(selectedRating);
+  const {data, isLoading, error} = useGetUserAdvocateByIdQuery(id);
+  const [giveAdvocateReview] = useGiveAdvocateReviewMutation();
+
+  const advocateDetails = data?.data[0];
+  // console.log(advocateDetails);
+
+  if (isLoading) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  // Handle error state
+  if (error) {
+    console.log(error);
+    return <Text>An error occurred: {error.message}</Text>;
+  }
+  const handleRating = star => {
+    // Toggle the star: if clicked on the current rating, reset it; otherwise, set the new rating
+    setRating(prevRating => (prevRating === star ? 0 : star));
   };
+  // console.log('feedback', rating);
+  const validationSchema = Yup.object().shape({
+    rating: Yup.number()
+      .min(1, 'Please select at least one star')
+      .max(5, 'Maximum 5 stars allowed')
+      .required('Rating is required'),
+    comment: Yup.string()
+      .max(600, 'Maximum 600 characters allowed')
+      .optional('Comment is required'),
+  });
 
-  const handleSubmit = () => {
-    // Add form submission logic here
-    console.log('Feedback submitted:', {rating, comment, recommendation});
+  const handleSubmit = async (values, {resetForm}) => {
+    setLoading(true);
+    try {
+      const payload = {
+        rating: values.rating,
+        advocate: id,
+      };
+  
+      // Only include `message` if it's not empty after trimming
+      if (values.comment.trim() !== '') {
+        payload.message = values.comment;
+      }
+  
+      const response = await giveAdvocateReview(payload);
+      console.log('Feedback response:', response);
+      if (response?.data?.success) {
+        showMessage({
+          message: 'Success',
+          description: response?.data?.message,
+          type: 'success',
+        });
+        resetForm();
+      } else {
+        const errorMsg =
+          response.error?.data?.message || 'Something went wrong!';
+        showMessage({
+          message: 'Error',
+          description: errorMsg,
+          type: 'danger',
+        });
+      }
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      showMessage({
+        message: 'Error',
+        description: 'Something went wrong!',
+        type: 'danger',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,7 +118,11 @@ const FeedbackForm = () => {
 
             {/* Image */}
             <Image
-              source={require('../../../assets/images/user.png')} // Replace with your image path
+              source={
+                advocateDetails.profilePic?.url
+                  ? {uri: advocateDetails.profilePic.url}
+                  : require('../../../assets/images/avatar.png')
+              }
               style={styles.avatar}
             />
 
@@ -57,17 +136,17 @@ const FeedbackForm = () => {
           </View>
           <Text style={styles.questionText}>
             How was your experience with{'\n'}
-            <Text style={styles.userName}>Mr. Ankush Gupta?</Text>
+            <Text style={styles.userName}>{advocateDetails?.name}?</Text>
           </Text>
         </View>
 
-        <View style={styles.starsContainer}>
+        {/* <View style={styles.starsContainer}>
           {[1, 2, 3, 4, 5].map(star => (
             <TouchableOpacity
               key={star}
               style={{marginHorizontal: 6}}
               onPress={() => handleRating(star)}>
-              {star >= rating ? (
+              {star > rating ? (
                 <Image
                   source={require('../../../assets/images/icons/Vector.png')}
                   style={{width: 24, height: 24}}
@@ -97,9 +176,9 @@ const FeedbackForm = () => {
             value={comment}
             onChangeText={text => setComment(text)}
           />
-        </View>
+        </View> */}
 
-        <View style={styles.recommendationContainer}>
+        {/* <View style={styles.recommendationContainer}>
           <Text style={styles.recommendationText}>
             Would you recommend{' '}
             <Text style={styles.userName}>Mr. Ankush Gupta</Text> to your
@@ -128,8 +207,8 @@ const FeedbackForm = () => {
               <Text style={styles.radioLabel}>No</Text>
             </TouchableOpacity>
           </View>
-        </View>
-        <LinearGradient
+        </View> */}
+        {/* <LinearGradient
           colors={['#1262D2', '#17316D']}
           start={{x: 0, y: 0}}
           end={{x: 1, y: 0}}
@@ -137,7 +216,69 @@ const FeedbackForm = () => {
           <TouchableOpacity onPress={handleSubmit}>
             <Text style={styles.submitButtonText}>Submit your Feedback</Text>
           </TouchableOpacity>
-        </LinearGradient>
+        </LinearGradient> */}
+        <Formik
+          initialValues={{rating: 0, comment: ''}}
+          validationSchema={validationSchema}
+          onSubmit={handleSubmit}>
+          {({
+            values,
+            handleChange,
+            handleSubmit,
+            setFieldValue,
+            errors,
+            touched,
+          }) => (
+            <>
+              <View style={styles.starsContainer}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <TouchableOpacity
+                    key={star}
+                    style={{marginHorizontal: 6}}
+                    onPress={() => setFieldValue('rating', star)}>
+                    <Image
+                      source={
+                        star > values.rating
+                          ? require('../../../assets/images/icons/Vector.png') // Unfilled star
+                          : require('../../../assets/images/icons/activeStar.png') // Filled star
+                      }
+                      style={{width: 24, height: 24}}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {touched.rating && errors.rating && (
+                <Text style={styles.errorText}>{errors.rating}</Text>
+              )}
+
+              <View style={styles.commentContainer}>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Type here..."
+                  multiline
+                  maxLength={600}
+                  value={values.comment}
+                  onChangeText={handleChange('comment')}
+                />
+              </View>
+              {touched.comment && errors.comment && (
+                <Text style={styles.errorText}>{errors.comment}</Text>
+              )}
+
+              <LinearGradient
+                colors={['#1262D2', '#17316D']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 0}}
+                style={styles.submitButton}>
+                <TouchableOpacity onPress={handleSubmit}>
+                <Text style={styles.submitButtonText}>
+                  {loading ? 'Submitting...' : 'Submit your Feedback'}
+                </Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            </>
+          )}
+        </Formik>
       </View>
     </>
   );
@@ -268,6 +409,10 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontFamily: 'Poppins SemiBold',
+  },
+  errorText: {
+    color: 'red',
+    fontFamily:'Poppins'
   },
 });
 

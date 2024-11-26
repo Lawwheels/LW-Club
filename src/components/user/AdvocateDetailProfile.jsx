@@ -77,6 +77,10 @@ const AdvocateDetailProfile = ({navigation, route}) => {
     </TouchableOpacity>
   );
 
+  const handleFeedback = () => {
+    navigation.navigate('FeedbackForm', {id: advocateId});
+  };
+
   return (
     <ScrollView style={styles.container}>
       <ImageBackground
@@ -205,7 +209,6 @@ const AdvocateDetailProfile = ({navigation, route}) => {
                 advocateDetails?.userPracticeAreas?.length > 0 ? (
                   <View style={styles.practiceAreaRow}>
                     {advocateDetails.userPracticeAreas.map((item, index) => (
-                      
                       <Text key={index} style={styles.practiceItem}>
                         {item.name}
                       </Text>
@@ -269,6 +272,19 @@ const AdvocateDetailProfile = ({navigation, route}) => {
           </>
         )}
       </View>
+      <TouchableOpacity
+        style={{
+          backgroundColor: 'blue',
+          width: wp('90%'),
+          height: hp('5%'),
+          margin: 20,
+          borderRadius: 10,
+        }}
+        onPress={handleFeedback}>
+        <Text style={{color: '#fff', textAlign: 'center', padding: 10}}>
+          Give Your feedback
+        </Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 };

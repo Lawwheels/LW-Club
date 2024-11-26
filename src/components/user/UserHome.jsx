@@ -158,6 +158,8 @@ import {
   ImageBackground,
   TouchableWithoutFeedback,
   ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
@@ -177,7 +179,7 @@ const items = [
     id: 1,
     name: 'Notifications',
     image: require('../../../assets/images/notification.png'),
-    navigateTo: 'Notification',
+    navigateTo: 'UserNotification',
   },
   {
     id: 2,
@@ -325,63 +327,74 @@ const UserHome = ({navigation}) => {
     );
   };
   return (
-    <ScrollView style={styles.container}>
-      {/* Profile Completion Section */}
-      <TouchableWithoutFeedback onPress={() => navigation.navigate('Profile')}>
-        <LinearGradient
-          colors={['#1262D2', '#17316D']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
-          style={styles.banner}>
-          <View style={styles.bannerText}>
-            <Text style={styles.bannerTitle}>
-              Finish setting up your profile to attract more clients!
-            </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                maxWidth: '50%',
-              }}>
-              <View style={{marginTop: hp('1%')}}>
-                <Text style={styles.greeting}>
-                  <Text style={styles.userName}>Hi, {userDetails?.name} !</Text>
+    <>
+      <StatusBar
+        barStyle="light-content" // Options: 'default', 'light-content', 'dark-content'
+        backgroundColor="#1262D2" // Background color for Android
+      />
+      <SafeAreaView style={{flex: 1}}>
+        <ScrollView style={styles.container}>
+          {/* Profile Completion Section */}
+          <TouchableWithoutFeedback
+            onPress={() => navigation.navigate('UserProfile')}>
+            <LinearGradient
+              colors={['#1262D2', '#17316D']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 0}}
+              style={styles.banner}>
+              <View style={styles.bannerText}>
+                <Text style={styles.bannerTitle}>
+                  Finish setting up your profile to attract more clients!
                 </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    maxWidth: '50%',
+                  }}>
+                  <View style={{marginTop: hp('1%')}}>
+                    <Text style={styles.greeting}>
+                      <Text style={styles.userName}>
+                        Hi, {userDetails?.name} !
+                      </Text>
+                    </Text>
 
-                <Text style={styles.profileComplete}>
-                  <Text style={styles.percentage}>Profile 60% Complete</Text>
-                </Text>
-              </View>
+                    <Text style={styles.profileComplete}>
+                      <Text style={styles.percentage}>
+                        Profile 60% Complete
+                      </Text>
+                    </Text>
+                  </View>
 
-              {/* <TouchableOpacity style={styles.completeProfileButton}>
+                  {/* <TouchableOpacity style={styles.completeProfileButton}>
               <Text style={styles.completeProfileText}>Complete Profile</Text>
             </TouchableOpacity> */}
-            </View>
-          </View>
-          <View style={styles.profileContainer}>
-            <AnimatedCircularProgress
-              size={70}
-              width={3}
-              backgroundWidth={1}
-              fill={60}
-              tintColor="#1467DA"
-              backgroundColor="#000">
-              {() => (
-                <Image
-                  source={
-                    userDetails?.profilePic?.url
-                      ? {uri: userDetails.profilePic.url}
-                      : require('../../../assets/images/avatar.png')
-                  }
-                  style={styles.profileImage}
-                />
-              )}
-            </AnimatedCircularProgress>
-          </View>
-        </LinearGradient>
-      </TouchableWithoutFeedback>
-      {/* User Information */}
-      {/* <View style={styles.userInfo}>
+                </View>
+              </View>
+              <View style={styles.profileContainer}>
+                <AnimatedCircularProgress
+                  size={70}
+                  width={3}
+                  backgroundWidth={1}
+                  fill={60}
+                  tintColor="#1467DA"
+                  backgroundColor="#000">
+                  {() => (
+                    <Image
+                      source={
+                        userDetails?.profilePic?.url
+                          ? {uri: userDetails.profilePic.url}
+                          : require('../../../assets/images/user1.png')
+                      }
+                      style={styles.profileImage}
+                    />
+                  )}
+                </AnimatedCircularProgress>
+              </View>
+            </LinearGradient>
+          </TouchableWithoutFeedback>
+          {/* User Information */}
+          {/* <View style={styles.userInfo}>
         <View>
           <Text style={styles.userName}>{userDetails?.name}</Text>
         </View>
@@ -390,200 +403,218 @@ const UserHome = ({navigation}) => {
           style={{width: 24, height: 24}}
         />
       </View> */}
-      <View style={styles.cardContainer}>
-        {items.map(item => (
-          <LinearGradient
-            colors={['#E4EEFC', '#F3F7FF']}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 0}}
-            style={styles.card}>
-            <TouchableOpacity
-              key={item.id}
-              style={styles.centerContent}
-              onPress={() =>
-                item.navigateTo
-                  ? navigation.navigate(item.navigateTo)
-                  : console.log('No navigation available')
-              }>
-              <Image source={item.image} style={styles.iconImage} />
-              <Text style={styles.cardLabel}>{item.name}</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        ))}
-      </View>
+          <View style={styles.cardContainer}>
+            {items.map(item => (
+              <LinearGradient
+                colors={['#E4EEFC', '#F3F7FF']}
+                start={{x: 0, y: 0}}
+                end={{x: 1, y: 0}}
+                style={styles.card}>
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.centerContent}
+                  onPress={() =>
+                    item.navigateTo
+                      ? navigation.navigate(item.navigateTo)
+                      : console.log('No navigation available')
+                  }>
+                  <Image source={item.image} style={styles.iconImage} />
+                  <Text style={styles.cardLabel}>{item.name}</Text>
+                </TouchableOpacity>
+              </LinearGradient>
+            ))}
+          </View>
 
-      <View style={{marginVertical: hp('4%')}}>
-        <FlatList
-          data={data}
-          renderItem={({item}) => (
-            <TouchableOpacity onPress={() => navigation.navigate('UserReview')}>
-              <LawyerCard
-                name={item.name}
-                profession={item.profession}
-                status={item.status}
-                time={item.time}
-              />
-            </TouchableOpacity>
-          )}
-          keyExtractor={item => item.id}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.flatList}
-        />
-      </View>
-      {advocateData?.data.map(advocate => {
-        // console.log(advocate);
-        return (
-          <TouchableWithoutFeedback
-            key={advocate._id} // Ensure to use a unique key for each advocate
-            onPress={() =>
-              navigation.navigate('AdvocateDetailProfile', {
-                advocateId: advocate._id,
-              })
-            }>
-            <View style={styles.lawyerDetailContainer}>
-              <View style={{flexDirection: 'row'}}>
-                <View style={styles.leftContainer}>
-                  <Image
-                    style={styles.circleImage}
-                    source={
-                      advocate.profilePic?.url
-                        ? {uri: advocate.profilePic.url}
-                        : require('../../../assets/images/avatar.png')
-                    }
+          <View style={{marginVertical: hp('4%')}}>
+            <FlatList
+              data={data}
+              renderItem={({item}) => (
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('UserReview')}>
+                  <LawyerCard
+                    name={item.name}
+                    profession={item.profession}
+                    status={item.status}
+                    time={item.time}
                   />
-                </View>
-                <View style={styles.rightContainer}>
-                  <View style={styles.infoContainer}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        width: wp(65),
-                      }}>
-                      <View style={styles.lawyerDetails}>
-                        <Text style={styles.lawyerName}>{advocate.name}</Text>
-                        <Text style={styles.lawyerTitle}>
-                          {advocate?.specialization[0]?.name}
-                        </Text>
-                        {advocate.location?.city &&
-                          advocate.location?.state && (
-                            <View style={styles.locationContainer}>
-                              <Text style={styles.locationText}>
-                                {advocate.location.city},{' '}
-                                {advocate.location.state}
-                              </Text>
-                            </View>
-                          )}
-                      </View>
+                </TouchableOpacity>
+              )}
+              keyExtractor={item => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.flatList}
+            />
+          </View>
+          {advocateData?.data.map(advocate => {
+            // console.log(advocate);
+            return (
+              <TouchableWithoutFeedback
+                key={advocate._id} // Ensure to use a unique key for each advocate
+                onPress={() =>
+                  navigation.navigate('AdvocateDetailProfile', {
+                    advocateId: advocate._id,
+                  })
+                }>
+                <View style={styles.lawyerDetailContainer}>
+                  <View style={{flexDirection: 'row'}}>
+                    <View style={styles.leftContainer}>
+                      <Image
+                        style={styles.circleImage}
+                        source={
+                          advocate.profilePic?.url
+                            ? {uri: advocate.profilePic.url}
+                            : require('../../../assets/images/avatar.png')
+                        }
+                      />
+                    </View>
+                    <View style={styles.rightContainer}>
+                      <View style={styles.infoContainer}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            width: wp(65),
+                          }}>
+                          <View style={styles.lawyerDetails}>
+                            <Text style={styles.lawyerName}>
+                              {advocate.name}
+                            </Text>
+                            <Text style={styles.lawyerTitle}>
+                              {advocate?.specialization[0]?.name}
+                            </Text>
+                            {advocate.location?.city &&
+                              advocate.location?.state && (
+                                <View style={styles.locationContainer}>
+                                  <Text style={styles.locationText}>
+                                    {advocate.location.city},{' '}
+                                    {advocate.location.state}
+                                  </Text>
+                                </View>
+                              )}
+                          </View>
 
-                      <View style={styles.starRating}>
-                        <View style={styles.starsContainer}>
-                          {[...Array(5)].map((_, index) => (
-                            <Image
-                              key={index}
-                              source={require('../../../assets/images/star.png')}
-                              style={styles.starImage}
-                            />
-                          ))}
+                          <View style={styles.starRating}>
+                            <View style={styles.starsContainer}>
+                              {[...Array(5)].map((_, index) => (
+                                <Image
+                                  key={index}
+                                  source={require('../../../assets/images/star.png')}
+                                  style={styles.starImage}
+                                />
+                              ))}
+                            </View>
+                          </View>
                         </View>
                       </View>
                     </View>
                   </View>
+                  <View style={styles.aboutContainer}>
+                    <Text style={styles.aboutHeading}>About</Text>
+                    <Text style={styles.aboutText}>
+                      {advocate.headLine || 'No description available.'}.
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.aboutContainer}>
-                <Text style={styles.aboutHeading}>About</Text>
-                <Text style={styles.aboutText}>
-                  {advocate.headLine || 'No description available.'}.
-                </Text>
-              </View>
-            </View>
-          </TouchableWithoutFeedback>
-        );
-      })}
-      {/* Recent Consultation */}
-      <View style={styles.recentConsultationContainer}>
-        <Text style={styles.recentConsultationTitle}>
-          Upcoming Consultation
-        </Text>
-        {slotsData?.data?.length === 0 ||
-          !slotsData?.data?.some(item =>
-            item.slotes.some(slot => slot.status === 'Upcoming'),
-          ) ? (
-            // If there is no data or no upcoming slots, show the message
-            <Text style={styles.noCreatedSlotMessage}>No Upcoming Slots</Text>
-          ) : (
-        <FlatList
-          horizontal
-          data={slotData}
-          keyExtractor={item => item._id}
-          renderItem={({item}) => {
-            return (
-              <TouchableWithoutFeedback
-                onPress={() =>
-                  navigation.navigate(navigationStrings.USER_REVIEW, {
-                    id: item._id,
-                  })
-                }>
-                <ImageBackground
-                  source={require('../../../assets/images/consultation.png')}
-                  style={styles.consultationCard}
-                  imageStyle={styles.cardBorder}>
-                  <View style={styles.consultationHeader}>
-                    <Text style={[styles.consultantName, {color: '#294776'}]}>
-                      {item.advocate.name}
-                    </Text>
-                    <View
-                      style={[styles.callContainer, {borderColor: '#294776'}]}>
-                      <Image
-                        source={require('../../../assets/images/schedule/upcomingIcon.png')}
-                        style={styles.callIcon}
-                        resizeMode="contain"
-                      />
-                    </View>
-                  </View>
-
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      marginTop: 10,
-                    }}>
-                    <Image
-                      source={require('../../../assets/images/icons/note.png')}
-                      style={styles.consultIcon}
-                      resizeMode="contain"
-                    />
-                    <Text style={[styles.consultationDate, {color: '#1262D2'}]}>
-                      {item.date}
-                    </Text>
-                  </View>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      marginTop: 5,
-                    }}>
-                    <Image
-                      source={require('../../../assets/images/icons/time.png')}
-                      style={styles.consultIcon}
-                      resizeMode="contain"
-                    />
-                    <Text style={[styles.consultationDate, {color: '#1262D2'}]}>
-                      {item.time}
-                    </Text>
-                  </View>
-
-                  {/* Display Status */}
-                </ImageBackground>
               </TouchableWithoutFeedback>
             );
-          }}
-          showsHorizontalScrollIndicator={false}
-        />)}
-      </View>
-    </ScrollView>
+          })}
+          {/* Recent Consultation */}
+          <View style={styles.recentConsultationContainer}>
+            <Text style={styles.recentConsultationTitle}>
+              Upcoming Consultation
+            </Text>
+            {slotsData?.data?.length === 0 ||
+            !slotsData?.data?.some(item =>
+              item.slotes.some(slot => slot.status === 'Upcoming'),
+            ) ? (
+              // If there is no data or no upcoming slots, show the message
+              <Text style={styles.noCreatedSlotMessage}>No Upcoming Slots</Text>
+            ) : (
+              <FlatList
+                horizontal
+                data={slotData}
+                keyExtractor={item => item._id}
+                renderItem={({item}) => {
+                  return (
+                    <TouchableWithoutFeedback
+                      onPress={() =>
+                        navigation.navigate(navigationStrings.USER_REVIEW, {
+                          id: item._id,
+                        })
+                      }>
+                      <ImageBackground
+                        source={require('../../../assets/images/consultation.png')}
+                        style={styles.consultationCard}
+                        imageStyle={styles.cardBorder}>
+                        <View style={styles.consultationHeader}>
+                          <Text
+                            style={[styles.consultantName, {color: '#294776'}]}>
+                            {item.advocate.name}
+                          </Text>
+                          <View
+                            style={[
+                              styles.callContainer,
+                              {borderColor: '#294776'},
+                            ]}>
+                            <Image
+                              source={require('../../../assets/images/schedule/upcomingIcon.png')}
+                              style={styles.callIcon}
+                              resizeMode="contain"
+                            />
+                          </View>
+                        </View>
+
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            marginTop: 10,
+                          }}>
+                          <Image
+                            source={require('../../../assets/images/icons/note.png')}
+                            style={styles.consultIcon}
+                            resizeMode="contain"
+                          />
+                          <Text
+                            style={[
+                              styles.consultationDate,
+                              {color: '#1262D2'},
+                            ]}>
+                            {item.date}
+                          </Text>
+                        </View>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            marginTop: 5,
+                          }}>
+                          <Image
+                            source={require('../../../assets/images/icons/time.png')}
+                            style={styles.consultIcon}
+                            resizeMode="contain"
+                          />
+                          <Text
+                            style={[
+                              styles.consultationDate,
+                              {color: '#1262D2'},
+                            ]}>
+                            {item.time}
+                          </Text>
+                        </View>
+
+                        {/* Display Status */}
+                      </ImageBackground>
+                    </TouchableWithoutFeedback>
+                  );
+                }}
+                showsHorizontalScrollIndicator={false}
+              />
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 };
 
@@ -591,6 +622,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
+    paddingTop: hp('0.2%'),
   },
   banner: {
     paddingVertical: hp('2%'),
@@ -646,7 +678,7 @@ const styles = StyleSheet.create({
     // marginTop: 10,
   },
   profileImage: {
-    width: wp('15%'),
+    width: wp('18%'),
     height: hp('10%'),
     borderRadius: wp('8%'), // Makes the image round
   },

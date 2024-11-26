@@ -290,6 +290,15 @@ export const api = createApi({
         },
       }),
     }),
+    deleteSkill: builder.mutation({
+      query: ({id}) => ({
+        url: `advocate/profile/skill/${id}`,
+        method: 'DELETE',
+        headers: {
+          'Content-type': 'application/json',
+        },
+      }),
+    }),
     deleteEducation: builder.mutation({
       query: ({id}) => ({
         url: `advocate/profile/education/${id}`,
@@ -552,6 +561,43 @@ export const api = createApi({
         };
       },
     }),
+    rescheduleSlot: builder.mutation({
+      query: user => {
+        return {
+          url: `user/slot/rescheduleSlot`,
+          method: 'PUT',
+          body: user,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+      },
+    }),
+    cancelSlot: builder.mutation({
+      query: user => {
+        return {
+          url: `user/slot/cancelSlot`,
+          method: 'PUT',
+          body: user,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+      },
+    }),
+    giveAdvocateReview: builder.mutation({
+      query: user => {
+        return {
+          url: `user/giveAdvocateReviews`,
+          method: 'POST',
+          body: user,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        };
+      },
+    }),
+
   }),
 });
 
@@ -592,6 +638,7 @@ export const {
   useAdvocateProfileVisibleMutation,
   useGetAdvocateSlotByIdQuery,
   useGetPracticeAreaQuery,
+  useDeleteSkillMutation,
 
   useGetAdviseSeekerQuery,
   useDeleteUserProfilePicMutation,
@@ -602,5 +649,8 @@ export const {
   useSloteForUserQuery,
   useBookingSlotMutation,
   useGetUserSlotQuery,
-  useGetUserSlotByIdQuery
+  useGetUserSlotByIdQuery,
+  useRescheduleSlotMutation,
+  useCancelSlotMutation,
+  useGiveAdvocateReviewMutation
 } = api;

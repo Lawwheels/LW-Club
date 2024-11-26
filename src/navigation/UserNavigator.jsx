@@ -17,6 +17,7 @@ import Search from '../components/user/Search';
 import UserHome from '../components/user/UserHome';
 import UserSchedule from '../components/user/UserSchedule';
 import UserProfile from '../components/user/UserProfile';
+import UserAccount from '../components/user/UserAccount';
 
 const Tab = createBottomTabNavigator();
 
@@ -133,7 +134,8 @@ const UserNavigator = () => {
 
       <Tab.Screen
         name="Profile"
-        component={UserProfile}
+        // component={UserProfile}
+        component={UserAccount}
         options={{
           headerShown: false,
           tabBarShowLabel: true, 

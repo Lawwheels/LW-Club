@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "LawWheelsClub.app"
-               BlueprintName = "LawWheelsClub"
-               ReferencedContainer = "container:LawWheelsClub.xcodeproj">
+               BuildableName = "LWClub.app"
+               BlueprintName = "LWClub"
+               ReferencedContainer = "container:LWClub.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "LawWheelsClubTests.xctest"
-               BlueprintName = "LawWheelsClubTests"
-               ReferencedContainer = "container:LawWheelsClub.xcodeproj">
+               BuildableName = "LWClubTests.xctest"
+               BlueprintName = "LWClubTests"
+               ReferencedContainer = "container:LWClub.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "LawWheelsClub.app"
-            BlueprintName = "LawWheelsClub"
-            ReferencedContainer = "container:LawWheelsClub.xcodeproj">
+            BuildableName = "LWClub.app"
+            BlueprintName = "LWClub"
+            ReferencedContainer = "container:LWClub.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "LawWheelsClub.app"
-            BlueprintName = "LawWheelsClub"
-            ReferencedContainer = "container:LawWheelsClub.xcodeproj">
+            BuildableName = "LWClub.app"
+            BlueprintName = "LWClub"
+            ReferencedContainer = "container:LWClub.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

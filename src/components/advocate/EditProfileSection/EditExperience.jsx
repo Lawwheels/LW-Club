@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Switch,
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
@@ -78,9 +79,6 @@ export default EditExperience = ({route}) => {
     return null;
   }
 
-
-  
- 
   if (!startDate || !endDate) {
     return <Text>Loading dates...</Text>;
   }
@@ -97,58 +95,15 @@ export default EditExperience = ({route}) => {
       setEndDate(selectedDate);
     }
   };
-  // useEffect(() => {
-  //   console.log('Data received:', data); // Log the received data
 
-  //   // Function to process date
-  //   const processDate = (dateData, setDateFunc) => {
-  //     if (dateData && dateData.month && dateData.year) {
-  //       const { month, year } = dateData;
-  //       console.log('Received Month:', month, 'Year:', year);
+  // const initialValues = {
+  //   jobTitle: data?.data?.jobTitle || '',
+  //   firmName: data?.data?.firmName || '',
+  //   description: data?.data?.description || '',
+  //   isRecent: data?.data?.isRecent ?? false,
+  //   isOngoing: data?.data?.isOngoing ?? false,
+  // };
 
-  //       const yearNumber = Number(year);
-  //       const monthIndex = monthMapping[month]; // Get month index from mapping
-
-  //       if (monthIndex !== undefined && !isNaN(yearNumber)) {
-  //         const date = new Date(yearNumber, monthIndex, 1); // Create a date object
-  //         console.log('Constructed Date:', date);
-
-  //         if (!isNaN(date.getTime())) {
-  //           setDateFunc(date); // Set the date
-  //           console.log('Date set:', date);
-  //         } else {
-  //           console.error('Invalid Date Constructed:', date);
-  //           setDateFunc(null); // Handle invalid date
-  //         }
-  //       } else {
-  //         console.error('Invalid month or year value:', month, year);
-  //         setDateFunc(null); // Handle invalid month/year
-  //       }
-  //     } else {
-  //       console.error('Month or year is missing in dateData:', dateData);
-  //       setDateFunc(null); // Handle missing data
-  //     }
-  //   };
-
-  //   // Process both startDate and endDate
-  //   if (data && data.data) {
-  //     processDate(data.data.startDate, setStartDate);
-  //     processDate(data.data.endDate, setEndDate);
-  //   }
-  // }, [data]);
-
-  // console.log("stat",startDate)
-  const initialValues = {
-    jobTitle: data?.data?.jobTitle || '',
-    firmName: data?.data?.firmName || '',
-    description: data?.data?.description || '',
-    isRecent: data?.data?.isRecent ?? false, // Ensure it's a boolean
-    isOngoing: data?.data?.isOngoing ?? false,
- 
-  
-  };
-
-  //   console.log(initialValues);
   const jobTitles = [
     {key: '1', value: 'Advocate'},
     {key: '2', value: 'AOR'},
@@ -159,16 +114,7 @@ export default EditExperience = ({route}) => {
     {key: '7', value: 'Public Prosecutor'},
   ];
 
-  const profileVisible = [
-    {key: '1', value: 'True'},
-    {key: '2', value: 'False'},
-  ];
-
-  const booleanMapping = {
-    True: true,
-    False: false,
-  };
-
+  console.log('end', data?.data?.endDate);
   return (
     <>
       <CustomHeader
@@ -183,24 +129,38 @@ export default EditExperience = ({route}) => {
             jobTitle: data?.data?.jobTitle || '',
             firmName: data?.data?.firmName || '',
             description: data?.data?.description || '',
-            isRecent: data?.data?.isRecent ?? false, // Ensure it's a boolean
+            isRecent: data?.data?.isRecent ?? false,
             isOngoing: data?.data?.isOngoing ?? false,
           }}
           validationSchema={validationSchema}
           enableReinitialize
           onSubmit={async (values, {setSubmitting}) => {
-            setSubmitting(true); // Set submitting to true at the start
+            setSubmitting(true);
+            if (endDate && endDate.getTime() === new Date(0).getTime()) {
+              showMessage({
+                message: 'Error',
+                description: 'Please select a valid end date.',
+                type: 'danger',
+                titleStyle: { fontFamily: 'Poppins SemiBold' },
+                textStyle: { fontFamily: 'Poppins' },
+              });
+              setSubmitting(false); // Stop the form submission process
+              return; // Prevent form submission
+            }
             try {
               const experienceToSubmit = {
                 jobTitle: values.jobTitle,
                 firmName: values.firmName,
                 startDate: startDate.toISOString().split('T')[0],
                 endDate: endDate.toISOString().split('T')[0],
-                isRecent: Boolean(values.isRecent), // Ensure boolean value
-                isOngoing: Boolean(values.isOngoing),
-                description: values.description,
+                isRecent: values.isRecent, // Ensure boolean value
+                isOngoing: values.isOngoing,
                 id,
               };
+            
+              if (values.description.trim() !== '') {
+                experienceToSubmit.description = values.description;
+              }
 
               // console.log('Submitting experience:', experienceToSubmit);
               const res = await editExperience(experienceToSubmit);
@@ -293,7 +253,7 @@ export default EditExperience = ({route}) => {
                   style={styles.customButton}
                   onPress={() => setDatePickerVisible(true)}>
                   <Text style={styles.buttonText}>
-                  {startDate ? startDate.toDateString() : 'Enter Start Date'}
+                    {startDate ? startDate.toDateString() : 'Enter Start Date'}
                   </Text>
                 </TouchableOpacity>
                 {datePickerVisible && (
@@ -309,11 +269,36 @@ export default EditExperience = ({route}) => {
               {/* End Date */}
               <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>End Date</Text>
+                {values.isOngoing ? (
+                  <View style={styles.customButton}>
+                    <Text style={styles.buttonText}>Present</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.customButton}
+                    onPress={() => setEndDatePickerVisible(true)}>
+                    <Text style={styles.buttonText}>
+                      {endDate ? endDate.toDateString() : 'Enter End Date'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {!values.isOngoing && endDatePickerVisible && (
+                  <DateTimePicker
+                    value={endDate}
+                    mode="date"
+                    display="default"
+                    onChange={handleEndDate}
+                  />
+                )}
+              </View>
+
+              {/* <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>End Date</Text>
                 <TouchableOpacity
                   style={styles.customButton}
                   onPress={() => setEndDatePickerVisible(true)}>
                   <Text style={styles.buttonText}>
-                  {endDate ? endDate.toDateString() : 'Enter Start Date'}
+                    {endDate ? endDate.toDateString() : 'Enter Start Date'}
                   </Text>
                 </TouchableOpacity>
                 {endDatePickerVisible && (
@@ -324,7 +309,7 @@ export default EditExperience = ({route}) => {
                     onChange={handleEndDate}
                   />
                 )}
-              </View>
+              </View> */}
 
               {/* Description */}
               <View style={styles.inputContainer}>
@@ -346,7 +331,7 @@ export default EditExperience = ({route}) => {
               </View>
 
               {/* Recent */}
-              <View style={styles.inputContainer}>
+              {/* <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Recent</Text>
                 <SelectList
                   setSelected={val =>
@@ -364,10 +349,24 @@ export default EditExperience = ({route}) => {
                   inputStyles={{color: '#8E8E8E'}}
                   boxStyles={styles.dropdown}
                 />
+              </View> */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Recent</Text>
+                <View style={styles.switchContainer}>
+                  <Text style={styles.switchText}>
+                    {values.isRecent ? 'Yes' : 'No'}
+                  </Text>
+                  <Switch
+                    trackColor={{false: '#767577', true: '#1262D2'}}
+                    thumbColor={values.isRecent ? '#fff' : '#f4f3f4'}
+                    onValueChange={value => setFieldValue('isRecent', value)}
+                    value={values.isRecent}
+                  />
+                </View>
               </View>
 
               {/* Ongoing */}
-              <View style={styles.inputContainer}>
+              {/* <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>Ongoing</Text>
                 <SelectList
                   setSelected={val =>
@@ -385,14 +384,29 @@ export default EditExperience = ({route}) => {
                   inputStyles={{color: '#8E8E8E'}}
                   boxStyles={styles.dropdown}
                 />
+              </View> */}
+              <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Ongoing</Text>
+                <View style={styles.switchContainer}>
+                  <Text style={styles.switchText}>
+                    {values.isOngoing ? 'Yes' : 'No'}
+                  </Text>
+                  <Switch
+                    trackColor={{false: '#767577', true: '#1262D2'}}
+                    thumbColor={values.isOngoing ? '#fff' : '#f4f3f4'}
+                    onValueChange={value => setFieldValue('isOngoing', value)}
+                    value={values.isOngoing}
+                  />
+                </View>
               </View>
 
-              {/* Submit Button */}
-              <CustomButton
-                title="Update"
-                onPress={handleSubmit}
-                loading={isSubmitting}
-              />
+              <View style={{marginTop: hp('2%')}}>
+                <CustomButton
+                  title="Update"
+                  onPress={handleSubmit}
+                  loading={isSubmitting}
+                />
+              </View>
             </View>
           )}
         </Formik>
@@ -460,5 +474,19 @@ const styles = StyleSheet.create({
     color: '#7F7F80', // Text color
     fontSize: 14,
     fontFamily: 'Poppins',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#E1EBFF',
+  },
+  switchText: {
+    fontSize: 14,
+    fontFamily: 'Poppins',
+    color: '#333',
   },
 });
