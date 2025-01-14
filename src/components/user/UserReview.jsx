@@ -14,12 +14,17 @@ import {
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
 import {showMessage} from 'react-native-flash-message';
-import {useCancelSlotMutation, useGetUserSlotByIdQuery} from '../../redux/api/api';
+import {
+  useCancelSlotMutation,
+  useGetUserSlotByIdQuery,
+} from '../../redux/api/api';
 import RescheduleModal from './RescheduleModal';
 import {useNavigation} from '@react-navigation/native';
+import StarRating from '../../../shared/StarRating';
+import { handleError } from '../../../shared/authUtils';
 
 const UserReview = ({route}) => {
-  const {id} = route.params;
+  const {id} = route?.params;
   const navigation = useNavigation();
   const [cancelVisible, setCancelVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -27,9 +32,9 @@ const UserReview = ({route}) => {
   const [advocateId, setAdvocateId] = useState(null);
 
   const {data, error, isLoading} = useGetUserSlotByIdQuery(id);
-  const [cancelSlot]=useCancelSlotMutation();
+  const [cancelSlot] = useCancelSlotMutation();
 
-  // console.log('SlotId', data);
+  console.log('SlotId', id);
   const handleGoBack = () => {
     navigation.goBack();
   };
@@ -44,6 +49,7 @@ const UserReview = ({route}) => {
 
   if (error) {
     console.log(error);
+    handleError(error);
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <Text style={{color: 'red'}}>Error loading booking details.</Text>
@@ -166,7 +172,7 @@ const UserReview = ({route}) => {
 
   const handleCancel = async () => {
     try {
-      const res = await cancelSlot({sloteId:id}).unwrap();
+      const res = await cancelSlot({sloteId: id}).unwrap();
       console.log(res);
 
       if (res && res?.success) {
@@ -258,13 +264,17 @@ const UserReview = ({route}) => {
               </Text>
               <View style={styles.starRating}>
                 <View style={styles.starsContainer}>
-                  {[...Array(5)].map((_, index) => (
+                  {/* {[...Array(5)].map((_, index) => (
                     <Image
                       key={index}
                       source={require('../../../assets/images/star.png')}
                       style={styles.starImage}
                     />
-                  ))}
+                  ))} */}
+                  <StarRating
+                    rating={data?.data?.advocate?.averageRating || 0}
+                    starSize={18}
+                  />
                 </View>
               </View>
             </View>
@@ -337,8 +347,7 @@ const UserReview = ({route}) => {
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity
                     style={styles.confirmButton}
-                    onPress={handleCancel}
-                  >
+                    onPress={handleCancel}>
                     <Text style={styles.buttonText}>Confirm</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -508,12 +517,7 @@ const styles = StyleSheet.create({
   },
   starsContainer: {
     flexDirection: 'row',
-    marginRight: 5, // Adjust as needed
-  },
-  starImage: {
-    width: 18, // Adjust to your image size
-    height: 18, // Adjust to your image size
-    marginRight: 2,
+    // marginRight: 5, // Adjust as needed
   },
   header: {
     height: hp(9),

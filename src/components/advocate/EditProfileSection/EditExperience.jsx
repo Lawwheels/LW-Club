@@ -7,6 +7,7 @@ import {
   TextInput,
   ActivityIndicator,
   Switch,
+  RefreshControl
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
@@ -25,21 +26,26 @@ import {
   useGetExperienceByIdQuery,
 } from '../../../redux/api/api';
 import {useNavigation} from '@react-navigation/native';
+import { handleError } from '../../../../shared/authUtils';
 
 const validationSchema = Yup.object().shape({
   jobTitle: Yup.string().required('Job title is required'),
   firmName: Yup.string().required('Firm name is required'),
+  startDate: Yup.date().nullable().required('Start date is required'),
+  endDate: Yup.date().nullable(),
 });
+
 
 export default EditExperience = ({route}) => {
   const navigation = useNavigation();
   const {id} = route?.params || {};
-  const [startDate, setStartDate] = useState(new Date()); //new Date()
+  const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [endDatePickerVisible, setEndDatePickerVisible] = useState(false);
+  const [refresh,setRefresh]=useState(false);
 
-  const {data, isLoading, error} = useGetExperienceByIdQuery(id);
+  const {data, isLoading, error,refetch} = useGetExperienceByIdQuery(id);
   const [editExperience] = useEditExperienceMutation();
 
   useEffect(() => {
@@ -67,10 +73,11 @@ export default EditExperience = ({route}) => {
   // console.log(data);
   // Handle error state
   if (error) {
+    handleError(error);
     console.log(error);
     // Show the flash message
     showMessage({
-      message: `An error occurred: ${error.message}`,
+      message: `An error occurred: ${error?.message}`,
       type: 'danger',
       titleStyle: {fontFamily: 'Poppins'},
       style: {backgroundColor: 'red'},
@@ -79,6 +86,7 @@ export default EditExperience = ({route}) => {
     return null;
   }
 
+  console.log(endDate)
   if (!startDate || !endDate) {
     return <Text>Loading dates...</Text>;
   }
@@ -103,6 +111,19 @@ export default EditExperience = ({route}) => {
   //   isRecent: data?.data?.isRecent ?? false,
   //   isOngoing: data?.data?.isOngoing ?? false,
   // };
+  const pullMe = async () => {
+    try {
+      setRefresh(true);
+      await Promise.all([
+        refetch(), // Refetch advocate data
+      ]);
+    } catch (error) {
+      handleError(error);
+      console.error('Error during refetch:', error); // Handle errors if needed
+    } finally {
+      setRefresh(false); // Hide the refresh indicator after both data are fetched
+    }
+  };
 
   const jobTitles = [
     {key: '1', value: 'Advocate'},
@@ -114,7 +135,6 @@ export default EditExperience = ({route}) => {
     {key: '7', value: 'Public Prosecutor'},
   ];
 
-  console.log('end', data?.data?.endDate);
   return (
     <>
       <CustomHeader
@@ -123,7 +143,10 @@ export default EditExperience = ({route}) => {
       />
       <KeyboardAwareScrollView
         style={styles.container}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refresh} onRefresh={pullMe} />
+        }>
         <Formik
           initialValues={{
             jobTitle: data?.data?.jobTitle || '',
@@ -131,40 +154,54 @@ export default EditExperience = ({route}) => {
             description: data?.data?.description || '',
             isRecent: data?.data?.isRecent ?? false,
             isOngoing: data?.data?.isOngoing ?? false,
+            startDate: data?.data?.startDate || null,
+            endDate: data?.data?.endDate || null,
           }}
           validationSchema={validationSchema}
           enableReinitialize
           onSubmit={async (values, {setSubmitting}) => {
-            setSubmitting(true);
-            if (endDate && endDate.getTime() === new Date(0).getTime()) {
-              showMessage({
-                message: 'Error',
-                description: 'Please select a valid end date.',
-                type: 'danger',
-                titleStyle: { fontFamily: 'Poppins SemiBold' },
-                textStyle: { fontFamily: 'Poppins' },
-              });
-              setSubmitting(false); // Stop the form submission process
-              return; // Prevent form submission
+            setSubmitting(true); // Set submitting to true at the start
+            const startDateISO = startDate.toISOString().split('T')[0];
+            const endDateISO = values.endDate ? new Date(values.endDate).toISOString().split('T')[0] : null;
+
+            // Validate if endDate is after startDate
+            if (!values.isOngoing && endDateISO) {
+              const startDateObj = new Date(startDateISO);
+              const endDateObj = new Date(endDateISO);
+              if (endDateObj <= startDateObj) {
+                showMessage({
+                  message: 'Error',
+                  description: 'End date must be after the start date.',
+                  type: 'danger',
+                  titleStyle: {fontFamily: 'Poppins SemiBold'},
+                  textStyle: {fontFamily: 'Poppins'},
+                });
+                setSubmitting(false);
+                return; // Halt submission
+              }
             }
             try {
               const experienceToSubmit = {
                 jobTitle: values.jobTitle,
                 firmName: values.firmName,
-                startDate: startDate.toISOString().split('T')[0],
-                endDate: endDate.toISOString().split('T')[0],
-                isRecent: values.isRecent, // Ensure boolean value
+                startDate: startDateISO,
+                isRecent: values.isRecent,
                 isOngoing: values.isOngoing,
                 id,
               };
-            
+
+              if (!values.isOngoing && values.endDate) {
+                experienceToSubmit.endDate = endDateISO;
+              }
+
+              // Conditionally add description if it's not an empty string
               if (values.description.trim() !== '') {
                 experienceToSubmit.description = values.description;
               }
 
-              // console.log('Submitting experience:', experienceToSubmit);
+              console.log('Submitting experience:', experienceToSubmit);
               const res = await editExperience(experienceToSubmit);
-
+              console.log(res);
               if (res && res?.data && res?.data?.success) {
                 showMessage({
                   message: 'Success',
@@ -209,17 +246,21 @@ export default EditExperience = ({route}) => {
             touched,
             handleBlur,
             isSubmitting,
-          }) => (
+          }) => { console.log(errors)
+            return(
+           
             <View style={styles.experienceItem}>
               {/* Job Title */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Job Title</Text>
+                <Text style={styles.inputLabel}>
+                  Job Title<Text style={{color: 'red'}}> *</Text>
+                </Text>
                 <SelectList
                   setSelected={val => setFieldValue('jobTitle', val)}
                   data={jobTitles}
                   defaultOption={{
-                    key: initialValues.jobTitle,
-                    value: initialValues.jobTitle,
+                    key: values.jobTitle,
+                    value: values.jobTitle,
                   }}
                   placeholder="Select a job title"
                   onBlur={() => handleBlur('jobTitle')}
@@ -235,7 +276,9 @@ export default EditExperience = ({route}) => {
 
               {/* Company Name */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Company</Text>
+                <Text style={styles.inputLabel}>
+                  Company<Text style={{color: 'red'}}> *</Text>
+                </Text>
                 <TextInput
                   placeholder="Enter Company"
                   style={styles.input}
@@ -246,52 +289,97 @@ export default EditExperience = ({route}) => {
                   <Text style={styles.errorText}>{errors.firmName}</Text>
                 )}
               </View>
-
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Start Date</Text>
-                <TouchableOpacity
-                  style={styles.customButton}
-                  onPress={() => setDatePickerVisible(true)}>
-                  <Text style={styles.buttonText}>
-                    {startDate ? startDate.toDateString() : 'Enter Start Date'}
+                <Text style={styles.inputLabel}>Ongoing</Text>
+                <View style={styles.switchContainer}>
+                  <Text style={styles.switchText}>
+                    {values.isOngoing ? 'Yes' : 'No'}
                   </Text>
-                </TouchableOpacity>
-                {datePickerVisible && (
-                  <DateTimePicker
-                    value={startDate}
-                    mode="date"
-                    display="default"
-                    onChange={handleDateChange}
+                  <Switch
+                    trackColor={{false: '#767577', true: '#1262D2'}}
+                    thumbColor={values.isOngoing ? '#fff' : '#f4f3f4'}
+                    onValueChange={value => setFieldValue('isOngoing', value)}
+                    value={values.isOngoing}
                   />
-                )}
+                </View>
               </View>
+               <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Recent</Text>
+                <View style={styles.switchContainer}>
+                  <Text style={styles.switchText}>
+                    {values.isRecent ? 'Yes' : 'No'}
+                  </Text>
+                  <Switch
+                    trackColor={{false: '#767577', true: '#1262D2'}}
+                    thumbColor={values.isRecent ? '#fff' : '#f4f3f4'}
+                    onValueChange={value => setFieldValue('isRecent', value)}
+                    value={values.isRecent}
+                  />
+                </View>
+              </View> 
 
-              {/* End Date */}
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>End Date</Text>
-                {values.isOngoing ? (
-                  <View style={styles.customButton}>
-                    <Text style={styles.buttonText}>Present</Text>
-                  </View>
-                ) : (
+                  <Text style={styles.inputLabel}>Start Date</Text>
                   <TouchableOpacity
                     style={styles.customButton}
-                    onPress={() => setEndDatePickerVisible(true)}>
+                    onPress={() => setDatePickerVisible(true)}>
                     <Text style={styles.buttonText}>
-                      {endDate ? endDate.toDateString() : 'Enter End Date'}
+                      {startDate
+                        ? startDate.toDateString()
+                        : 'Enter Start Date'}
                     </Text>
                   </TouchableOpacity>
-                )}
-                {!values.isOngoing && endDatePickerVisible && (
-                  <DateTimePicker
-                    value={endDate}
-                    mode="date"
-                    display="default"
-                    onChange={handleEndDate}
-                  />
-                )}
-              </View>
+                  {datePickerVisible && (
+                    <DateTimePicker
+                      value={startDate}
+                      mode="date"
+                      display="default"
+                      onChange={handleDateChange}
+                    />
+                  )}
+                  {touched.startDate && errors.startDate && (
+                    <Text style={styles.errorText}>{errors.startDate}</Text>
+                  )}
+                </View>
+                <View style={styles.inputContainer}>
+                <Text style={styles.inputLabel}>Expected End Date</Text>
+              {/* End Date */}
+              <TouchableOpacity
+                          style={styles.customButton}
+                          onPress={() => setEndDatePickerVisible(true)}>
+                          {values.isOngoing ? (
+                            <Text style={styles.buttonText}>Present</Text> // Display "Present" if ongoing is true
+                          ) : values.endDate ? (
+                            <Text style={styles.buttonText}>
+                              {new Date(values.endDate).toDateString()}
+                              {/* {new Date(values.endDate).toISOString().split('T')[0]}  */}
+                            </Text> // Show selected end date
+                          ) : (
+                            <Text style={styles.buttonText}>
+                              Select End Date
+                            </Text> // Show "Select End Date" if no end date is selected
+                          )}
+                        </TouchableOpacity>
 
+                        {endDatePickerVisible &&
+                          !values.isOngoing && ( // Show date picker only if ongoing is false
+                            <DateTimePicker
+                              value={endDate || new Date()}
+                              mode="date"
+                              display="default"
+                              onChange={(event, selectedDate) => {
+                                if (event.type === 'set') {
+                                  const formattedDate = selectedDate
+                                    .toISOString()
+                                    .split('T')[0];
+                                  setFieldValue('endDate', formattedDate); // Set end date
+                                  setEndDate(selectedDate); // Update state
+                                }
+                                setEndDatePickerVisible(false); // Hide picker after date is selected
+                              }}
+                            />
+                          )}
+</View>
               {/* <View style={styles.inputContainer}>
                 <Text style={styles.inputLabel}>End Date</Text>
                 <TouchableOpacity
@@ -350,20 +438,7 @@ export default EditExperience = ({route}) => {
                   boxStyles={styles.dropdown}
                 />
               </View> */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Recent</Text>
-                <View style={styles.switchContainer}>
-                  <Text style={styles.switchText}>
-                    {values.isRecent ? 'Yes' : 'No'}
-                  </Text>
-                  <Switch
-                    trackColor={{false: '#767577', true: '#1262D2'}}
-                    thumbColor={values.isRecent ? '#fff' : '#f4f3f4'}
-                    onValueChange={value => setFieldValue('isRecent', value)}
-                    value={values.isRecent}
-                  />
-                </View>
-              </View>
+              
 
               {/* Ongoing */}
               {/* <View style={styles.inputContainer}>
@@ -385,20 +460,7 @@ export default EditExperience = ({route}) => {
                   boxStyles={styles.dropdown}
                 />
               </View> */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Ongoing</Text>
-                <View style={styles.switchContainer}>
-                  <Text style={styles.switchText}>
-                    {values.isOngoing ? 'Yes' : 'No'}
-                  </Text>
-                  <Switch
-                    trackColor={{false: '#767577', true: '#1262D2'}}
-                    thumbColor={values.isOngoing ? '#fff' : '#f4f3f4'}
-                    onValueChange={value => setFieldValue('isOngoing', value)}
-                    value={values.isOngoing}
-                  />
-                </View>
-              </View>
+            
 
               <View style={{marginTop: hp('2%')}}>
                 <CustomButton
@@ -408,7 +470,7 @@ export default EditExperience = ({route}) => {
                 />
               </View>
             </View>
-          )}
+          )}}
         </Formik>
       </KeyboardAwareScrollView>
     </>

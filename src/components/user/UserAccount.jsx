@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useState} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
+  Modal,
+  Pressable,
   ToastAndroid,
   ActivityIndicator,
 } from 'react-native';
@@ -18,15 +20,20 @@ import {
 } from 'react-native-responsive-screen';
 import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
+import {CommonActions} from '@react-navigation/native';
 import CustomHeader from '../../../shared/CustomHeader';
 import {useGetAdviseSeekerQuery} from '../../redux/api/api';
+import {logoutUser} from '../../redux/reducers/auth/authSlice';
+import { handleError } from '../../../shared/authUtils';
 
 const UserAccount = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const [modalVisible, setModalVisible] = useState(false);
 
   const {data, error, isLoading} = useGetAdviseSeekerQuery();
-  console.log(data);
-  console.log(error);
+  // console.log(data);
+  // console.log(error);
 
   if (isLoading) {
     return (
@@ -39,6 +46,7 @@ const UserAccount = () => {
   // Handle error state
   if (error) {
     console.log(error);
+    handleError(error);
     // Show the flash message
     showMessage({
       message: `An error occurred: ${error?.error}`,
@@ -56,58 +64,53 @@ const UserAccount = () => {
     );
   }
   const handleLogout = async () => {
-    try {
-      // Remove authToken from AsyncStorage
-      await AsyncStorage.removeItem('authToken');
-      // Show a toast notification for feedback
-      ToastAndroid.show(
-        'You have successfully logged out!',
-        ToastAndroid.SHORT,
-      );
-
-      // Reset navigation stack and navigate to Login screen
-      navigation.navigate('Login');
-    } catch (error) {
-      console.error('Error logging out: ', error);
-      showMessage({
-        message: 'Logout failed. Please try again.',
-        type: 'danger',
-        titleStyle: {fontFamily: 'Poppins'},
-        style: {backgroundColor: 'red'},
-      });
-    }
+    setModalVisible(false);
+    await dispatch(logoutUser()); // Clear auth state
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{name: 'authStack'}],
+      }),
+    );
   };
   console.log(data);
   return (
     <>
-      <CustomHeader
-        title={'My Account'}
-        icon={require('../../../assets/images/back.png')}
-      />
-      <ScrollView style={styles.container}>
-        {/* User Profile Section */}
-        <LinearGradient
-          colors={['#1262D2', '#17316D']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
-          style={styles.profileCard}>
-          <View style={styles.profileDetails}>
-            <Image
-              source={
-                data && data?.data?.profilePic && data.data.profilePic.url
-                  ? {uri: data.data.profilePic.url}
-                  : require('../../../assets/images/user1.png')
-              }
-              style={styles.profileImage}
-            />
-            <View>
-              <Text style={styles.profileName}>{data && data?.data?.name}</Text>
-              <Text style={styles.profileTitle}>
-                {data && data?.data?.email}
-              </Text>
+      <View style={styles.container}>
+        <CustomHeader
+          title={'My Account'}
+          icon={require('../../../assets/images/back.png')}
+        />
+        <ScrollView
+          style={{paddingHorizontal: wp('4%')}}
+          showsVerticalScrollIndicator={false}>
+          {/* User Profile Section */}
+          <LinearGradient
+            colors={['#1262D2', '#17316D']}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 0}}
+            style={styles.profileCard}>
+            <View style={styles.profileDetails}>
+              <Image
+                source={
+                  data && data?.data?.profilePic && data.data.profilePic.url
+                    ? {uri: data.data.profilePic.url}
+                    : {
+                        uri: 'https://www.shutterstock.com/image-vector/avatar-gender-neutral-silhouette-vector-600nw-2470054311.jpg',
+                      }
+                }
+                style={styles.profileImage}
+              />
+              <View>
+                <Text style={styles.profileName}>
+                  {data && data?.data?.name}
+                </Text>
+                <Text style={styles.profileTitle}>
+                  {data && data?.data?.email}
+                </Text>
+              </View>
             </View>
-          </View>
-          {/* <TouchableOpacity style={styles.viewProfileButton}>
+            {/* <TouchableOpacity style={styles.viewProfileButton}>
             <Text style={styles.viewProfileText}>
               View Your {'\n'}Social Handle
             </Text>
@@ -116,10 +119,10 @@ const UserAccount = () => {
               style={{width: 24, height: 24}}
             />
           </TouchableOpacity> */}
-        </LinearGradient>
+          </LinearGradient>
 
-        {/* Profile Actions */}
-        <View style={styles.actionsRow}>
+          {/* Profile Actions */}
+          {/* <View style={styles.actionsRow}>
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => navigation.navigate('UserProfile')}>
@@ -149,138 +152,207 @@ const UserAccount = () => {
             />
             <Text style={[styles.actionText, {color: 'red'}]}>Logout</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* App Settings */}
-        <View>
-          <Text style={styles.sectionTitle}>Your App</Text>
-          <View style={styles.menuItemContainer}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              // onPress={()=>navigation.navigate("Notification")}
-            >
-              <Image
-                source={require('../../../assets/images/account/export.png')} // Path to the profile image
-                style={{width: 24, height: 24}}
-              />
-              <Text style={styles.menuText}>Share The Application</Text>
-              <Image
-                source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
-                style={styles.backIcon}
-              />
-            </TouchableOpacity>
-            <View style={styles.horizontalLine} />
-            <TouchableOpacity
-              style={styles.menuItem}
-              //  onPress={()=>navigation.navigate("UserBooking")}
-            >
-              <Image
-                source={require('../../../assets/images/account/like-shapes.png')} // Path to the profile image
-                style={{width: 30, height: 30}}
-              />
-              <Text style={styles.menuText1}>Rate The Application</Text>
-              <Image
-                source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
-                style={styles.backIcon}
-              />
-            </TouchableOpacity>
-            <View style={styles.horizontalLine} />
-            <View style={styles.menuItem}>
-              <Image
-                source={require('../../../assets/images/account/global.png')} // Path to the profile image
-                style={styles.icon}
-              />
-              <Text style={styles.menuText}>Language</Text>
-              <Image
-                source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
-                style={styles.backIcon}
-              />
+        </View> */}
+          <View style={styles.actionsRow}>
+            <View
+              style={[
+                styles.cardContainer,
+                {paddingHorizontal: 10, paddingVertical: 5},
+              ]}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => navigation.navigate('UserProfile')}>
+                <Image
+                  source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
+                  style={{width: 24, height: 24}}
+                />
+                <Text style={[styles.actionText, {color: '#294776'}]}>
+                  My Profile
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.horizontalLine} />
-            <View style={styles.menuItem}>
-              <Image
-                source={require('../../../assets/images/account/setting-2.png')} // Path to the profile image
-                style={styles.icon}
-              />
-              <Text style={styles.menuText}>Settings</Text>
-              <Image
-                source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
-                style={styles.backIcon}
-              />
+
+            <View
+              style={[
+                styles.cardContainer,
+                {paddingHorizontal: 15, paddingVertical: 5},
+              ]}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                // onPress={handleLogout}
+                onPress={() => setModalVisible(true)}
+                >
+                <Image
+                  source={require('../../../assets/images/icons/logout.png')} // Path to the profile image
+                  style={{width: 24, height: 24}}
+                />
+                <Text style={[styles.actionText, {color: 'red'}]}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* App Settings */}
+          <View>
+            <Text style={styles.sectionTitle}>Your App</Text>
+            <View style={styles.menuItemContainer}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                // onPress={()=>navigation.navigate("Notification")}
+              >
+                <Image
+                  source={require('../../../assets/images/account/export.png')} // Path to the profile image
+                  style={{width: 24, height: 24}}
+                />
+                <Text style={styles.menuText}>Share The Application</Text>
+                <Image
+                  source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
+                  style={styles.backIcon}
+                />
+              </TouchableOpacity>
+              <View style={styles.horizontalLine} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                //  onPress={()=>navigation.navigate("UserBooking")}
+              >
+                <Image
+                  source={require('../../../assets/images/account/like-shapes.png')} // Path to the profile image
+                  style={{width: 30, height: 30}}
+                />
+                <Text style={styles.menuText1}>Rate The Application</Text>
+                <Image
+                  source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
+                  style={styles.backIcon}
+                />
+              </TouchableOpacity>
+              <View style={styles.horizontalLine} />
+              <View style={styles.menuItem}>
+                <Image
+                  source={require('../../../assets/images/account/global.png')} // Path to the profile image
+                  style={styles.icon}
+                />
+                <Text style={styles.menuText}>Language</Text>
+                <Image
+                  source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
+                  style={styles.backIcon}
+                />
+              </View>
+              <View style={styles.horizontalLine} />
+              <View style={styles.menuItem}>
+                <Image
+                  source={require('../../../assets/images/account/setting-2.png')} // Path to the profile image
+                  style={styles.icon}
+                />
+                <Text style={styles.menuText}>Settings</Text>
+                <Image
+                  source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
+                  style={styles.backIcon}
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* More Information */}
+          <View>
+            <Text style={styles.sectionTitle}>More Information</Text>
+            <View style={styles.menuItemContainer}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('AboutUs')}>
+                <Image
+                  source={require('../../../assets/images/account/info-circle.png')} // Path to the profile image
+                  style={styles.icon}
+                />
+                <Text style={styles.menuText}>About us</Text>
+                <Image
+                  source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
+                  style={styles.backIcon}
+                />
+              </TouchableOpacity>
+              <View style={styles.horizontalLine} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('ContactUs')}>
+                <Image
+                  source={require('../../../assets/images/account/call-incoming.png')} // Path to the profile image
+                  style={{width: 26, height: 26}}
+                />
+                <Text style={styles.menuText}>Contact us</Text>
+                <Image
+                  source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
+                  style={styles.backIcon}
+                />
+              </TouchableOpacity>
+              <View style={styles.horizontalLine} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('HelpSupport')}>
+                <Image
+                  source={require('../../../assets/images/account/help.png')} // Path to the profile image
+                  style={styles.icon}
+                />
+                <Text style={styles.menuText}>Help & Support</Text>
+                <Image
+                  source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
+                  style={styles.backIcon}
+                />
+              </TouchableOpacity>
+              <View style={styles.horizontalLine} />
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => navigation.navigate('PrivacyPolicy')}>
+                <Image
+                  source={require('../../../assets/images/account/policy.png')} // Path to the profile image
+                  style={styles.icon}
+                />
+                <Text style={styles.menuText}>Privacy Policy</Text>
+                <Image
+                  source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
+                  style={styles.backIcon}
+                />
+              </TouchableOpacity>
+              <View style={styles.horizontalLine} />
+              <View style={styles.menuItem}>
+                <Image
+                  source={require('../../../assets/images/account/terms.png')} // Path to the profile image
+                  style={{width: 24, height: 24, marginLeft: 4}}
+                />
+                <Text style={styles.menuText}>Terms & Conditions</Text>
+                <Image
+                  source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
+                  style={styles.backIcon}
+                />
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+        <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirm Logout</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to log out?</Text>
+
+            <View style={styles.buttonContainer}>
+              <Pressable
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.button, styles.confirmButton]}
+                onPress={handleLogout}
+              >
+                <Text style={styles.buttonText}>Logout</Text>
+              </Pressable>
             </View>
           </View>
         </View>
-
-        {/* More Information */}
-        <View>
-          <Text style={styles.sectionTitle}>More Information</Text>
-          <View style={styles.menuItemContainer}>
-            <TouchableOpacity style={styles.menuItem}  onPress={() => navigation.navigate('AboutUs')}>
-              <Image
-                source={require('../../../assets/images/account/info-circle.png')} // Path to the profile image
-                style={styles.icon}
-              />
-              <Text style={styles.menuText}>About us</Text>
-              <Image
-                source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
-                style={styles.backIcon}
-              />
-            </TouchableOpacity>
-            <View style={styles.horizontalLine} />
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('ContactUs')}>
-              <Image
-                source={require('../../../assets/images/account/call-incoming.png')} // Path to the profile image
-                style={{width: 26, height: 26}}
-              />
-              <Text style={styles.menuText}>Contact us</Text>
-              <Image
-                source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
-                style={styles.backIcon}
-              />
-            </TouchableOpacity>
-            <View style={styles.horizontalLine} />
-            <TouchableOpacity style={styles.menuItem} onPress={()=>navigation.navigate("HelpSupport")}>
-              <Image
-                source={require('../../../assets/images/account/help.png')} // Path to the profile image
-                style={styles.icon}
-              />
-              <Text style={styles.menuText}>Help & Support</Text>
-              <Image
-                source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
-                style={styles.backIcon}
-              />
-            </TouchableOpacity>
-            <View style={styles.horizontalLine} />
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => navigation.navigate('PrivacyPolicy')}>
-              <Image
-                source={require('../../../assets/images/account/policy.png')} // Path to the profile image
-                style={styles.icon}
-              />
-              <Text style={styles.menuText}>Privacy Policy</Text>
-              <Image
-                source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
-                style={styles.backIcon}
-              />
-            </TouchableOpacity>
-            <View style={styles.horizontalLine} />
-            <View style={styles.menuItem}>
-              <Image
-                source={require('../../../assets/images/account/terms.png')} // Path to the profile image
-                style={{width: 24, height: 24, marginLeft: 4}}
-              />
-              <Text style={styles.menuText}>Terms & Conditions</Text>
-              <Image
-                source={require('../../../assets/images/account/arrow-right.png')} // Path to the profile image
-                style={styles.backIcon}
-              />
-            </View>
-          </View>
-        </View>
-      </ScrollView>
+      </Modal>
+      </View>
     </>
   );
 };
@@ -289,7 +361,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
-    paddingHorizontal: wp('4%'),
+    paddingTop: wp('8%'),
   },
   header: {
     flexDirection: 'row',
@@ -308,7 +380,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: hp('3.5%'),
+    marginBottom: hp('1.5%'),
   },
   profileDetails: {
     flexDirection: 'row',
@@ -351,15 +423,22 @@ const styles = StyleSheet.create({
   actionsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: hp('1.5%'),
+    width: '100%',
+  },
+  cardContainer: {
+    width: '48%',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    elevation: 2,
+    backgroundColor: '#F3F7FF',
+    borderRadius: 5,
   },
   actionButton: {
     alignItems: 'center',
-    justifyContent: 'center',
     padding: wp('2%'),
-    flex: 1,
     marginHorizontal: wp('1%'),
-    // elevation: 2,
   },
   actionText: {
     marginTop: hp('1.2%'),
@@ -394,8 +473,8 @@ const styles = StyleSheet.create({
   },
   menuText1: {
     flex: 1,
-    marginLeft: 11,
-    fontSize: 14,
+    marginLeft: wp('3%'),
+    fontSize: wp('3.5%'),
     fontFamily: 'Poppins',
     fontWeight: '400',
     color: '#294776',
@@ -414,6 +493,52 @@ const styles = StyleSheet.create({
   icon: {
     width: 27,
     height: hp('3.6%'),
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: hp('2%'),
+    fontFamily:'Poppins SemiBold',
+    marginBottom: hp('1%'),
+  },
+  modalMessage: {
+    fontSize: hp('1.8%'),
+    textAlign: 'center',
+    fontFamily:'Poppins',
+    marginBottom: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  button: {
+    flex: 1,
+    padding: 10,
+    marginHorizontal: 5,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#ccc',
+  },
+  confirmButton: {
+    backgroundColor: '#f00',
+  },
+  buttonText: {
+    color: 'white',
+    fontFamily:'Poppins SemiBold'
   },
 });
 

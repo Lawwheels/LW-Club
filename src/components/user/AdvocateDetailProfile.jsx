@@ -8,24 +8,64 @@ import {
   ScrollView,
   ImageBackground,
   ActivityIndicator,
+  RefreshControl,
+  FlatList,
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import {showMessage} from 'react-native-flash-message';
 import LinearGradient from 'react-native-linear-gradient';
-import {useGetUserAdvocateByIdQuery} from '../../redux/api/api';
+import {
+  useGetAllAcceptedChatQuery,
+  useGetUserAdvocateByIdQuery,
+  usePrivateChatMutation,
+  useSendRequestMutation,
+  useFollowRequestMutation,
+  useUserPrivateChatMutation,
+} from '../../redux/api/api';
+import StarRating from '../../../shared/StarRating';
+import UserAdvocateReview from './UserAdvocateReview';
+import {getSocket} from '../../../socket';
+import {handleError} from '../../../shared/authUtils';
 
 const AdvocateDetailProfile = ({navigation, route}) => {
   const {advocateId} = route?.params || {};
+  const [refresh, setRefresh] = useState(false);
   const [activeTab, setActiveTab] = useState('Professional');
   const handleGoBack = () => {
     navigation.goBack();
   };
-  const {data, isLoading, error} = useGetUserAdvocateByIdQuery(advocateId);
+  const {data, isLoading, error, refetch} =
+    useGetUserAdvocateByIdQuery(advocateId);
+
+  // console.log("advocateId",advocateId)
+  // const {
+  //   data: accept,
+  //   isLoading: loading,
+  //   error: isError,
+  // } = useGetAllAcceptedChatQuery('accepted');
+
+  const [sendRequest] = useSendRequestMutation();
+  const [followRequest] = useFollowRequestMutation();
+  const [userPrivateChat] = useUserPrivateChatMutation();
+  const socket = getSocket();
+  const pullMe = async () => {
+    try {
+      setRefresh(true);
+      await Promise.all([
+        refetch(), // Refetch advocate data
+      ]);
+    } catch (error) {
+      console.error('Error during refetch:', error); // Handle errors if needed
+    } finally {
+      setRefresh(false); // Hide the refresh indicator after both data are fetched
+    }
+  };
   // console.log('userAdvocate', data);
-  const advocateDetails = data?.data[0];
-  console.log(advocateDetails);
+  const advocateDetails = data?.data;
+  // console.log('profileData', advocateDetails);
   if (isLoading) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -37,7 +77,8 @@ const AdvocateDetailProfile = ({navigation, route}) => {
   // Handle error state
   if (error) {
     console.log(error);
-    return <Text>An error occurred: {error.message}</Text>;
+    handleError(error);
+    // return <Text>An error occurred: {error?.message}</Text>;
   }
   function getLastJobTitle(experiences) {
     // Check if experiences exist and are not empty
@@ -81,12 +122,151 @@ const AdvocateDetailProfile = ({navigation, route}) => {
     navigation.navigate('FeedbackForm', {id: advocateId});
   };
 
+  const handleConnection = async advocateId => {
+    try {
+      const res = await sendRequest({userId: advocateId}).unwrap();
+      console.log(res);
+      if (res && res?.success) {
+        try {
+          // Emit NEW_CONNECTION event with userId
+          if (socket) {
+            socket.emit('NEW_CONNECTION', {userId: advocateId}, error => {
+              if (error) {
+                console.error('Socket emit error:', error);
+                throw new Error('Failed to emit NEW_CONNECTION event.');
+              }
+            });
+          }
+        } catch (emitError) {
+          console.error('Failed to emit event:', emitError);
+          throw emitError; // Re-throw to show the error in a message
+        }
+        showMessage({
+          message: 'Success',
+          description: res?.message,
+          type: 'success',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
+      } else {
+        const errorMsg = res.error?.data?.message || 'Something went wrong!';
+        showMessage({
+          message: 'Error',
+          description: errorMsg,
+          type: 'danger',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send connection request: ', error);
+      handleError(error);
+      const errorMsg =
+        error?.data?.message ||
+        error?.response?.data?.error?.data?.message ||
+        'Something went wrong!';
+      showMessage({
+        message: 'Error',
+        description: errorMsg,
+        type: 'danger',
+        titleStyle: {fontFamily: 'Poppins SemiBold'},
+        textStyle: {fontFamily: 'Poppins'},
+      });
+    } finally {
+    }
+  };
+  const handleFollow = async advocateId => {
+    try {
+      const res = await followRequest({followee: advocateId}).unwrap();
+      // console.log(res);
+      if (res && res?.success) {
+        showMessage({
+          message: 'Success',
+          description: res?.message,
+          type: 'success',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
+      } else {
+        const errorMsg = res.error?.data?.message || 'Something went wrong!';
+        showMessage({
+          message: 'Error',
+          description: errorMsg,
+          type: 'danger',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send connection request: ', error);
+      const errorMsg =
+        error?.data?.message ||
+        error?.response?.data?.error?.data?.message ||
+        'Something went wrong!';
+      showMessage({
+        message: 'Error',
+        description: errorMsg,
+        type: 'danger',
+        titleStyle: {fontFamily: 'Poppins SemiBold'},
+        textStyle: {fontFamily: 'Poppins'},
+      });
+    }
+  };
+
+  const handleMessage = async advocate => {
+    // console.log('advocate', advocate);
+    try {
+      const res = await userPrivateChat({member: advocate._id}).unwrap();
+      console.log(res);
+
+      if (res && res?.success) {
+        const item = res?.transformedChats;
+        // console.log('item chat conversation', item);
+        navigation.navigate('ChatConversation', {
+          _id: item._id,
+          name: item?.chatName,
+          avatar:
+            item?.avatar ||
+            'https://www.shutterstock.com/image-vector/avatar-gender-neutral-silhouette-vector-600nw-2470054311.jpg',
+          members: item?.members,
+        });
+      } else {
+        const errorMsg = res.error?.data?.message || 'Something went wrong!';
+        showMessage({
+          message: 'Error',
+          description: errorMsg,
+          type: 'danger',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
+      }
+    } catch (error) {
+      handleError(error);
+      console.error('Failed to send connection request: ', error);
+      const errorMsg =
+        error?.data?.message ||
+        error?.response?.data?.error?.data?.message ||
+        'Something went wrong!';
+      showMessage({
+        message: 'Error',
+        description: errorMsg,
+        type: 'danger',
+        titleStyle: {fontFamily: 'Poppins SemiBold'},
+        textStyle: {fontFamily: 'Poppins'},
+      });
+    }
+  };
+
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={refresh} onRefresh={pullMe} />
+      }>
       <ImageBackground
         source={
-          advocateDetails.coverPic?.url
-            ? {uri: advocateDetails.coverPic.url}
+          advocateDetails?.coverPic?.url
+            ? {uri: advocateDetails?.coverPic.url}
             : {
                 uri: 'https://plus.unsplash.com/premium_photo-1698084059560-9a53de7b816b?q=80&w=2911&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
               }
@@ -104,8 +284,8 @@ const AdvocateDetailProfile = ({navigation, route}) => {
           <Image
             style={styles.profileImage}
             source={
-              advocateDetails.profilePic?.url
-                ? {uri: advocateDetails.profilePic.url}
+              advocateDetails?.profilePic?.url
+                ? {uri: advocateDetails?.profilePic.url}
                 : require('../../../assets/images/avatar.png')
             }
           />
@@ -118,7 +298,7 @@ const AdvocateDetailProfile = ({navigation, route}) => {
               <TouchableOpacity
                 style={{flexDirection: 'row'}}
                 onPress={() =>
-                  navigation.navigate('UserBooking', {id: advocateDetails._id})
+                  navigation.navigate('UserBooking', {id: advocateId})
                 }>
                 <Image
                   source={require('../../../assets/images/icons/vector1.png')}
@@ -131,15 +311,16 @@ const AdvocateDetailProfile = ({navigation, route}) => {
             </LinearGradient>
             <View style={styles.starRating}>
               <View style={styles.starsContainer}>
-                {[...Array(5)].map((_, index) => (
-                  <Image
-                    key={index}
-                    source={require('../../../assets/images/star.png')}
-                    style={styles.starImage}
-                  />
-                ))}
+                <StarRating
+                  rating={advocateDetails?.averageRating || 0}
+                  starSize={18}
+                />
               </View>
-              <Text style={styles.ratingText}>5/5</Text>
+              <View style={{marginTop: hp('1%')}}>
+                <Text style={styles.ratingText}>
+                  {advocateDetails?.averageRating}/5
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -151,19 +332,71 @@ const AdvocateDetailProfile = ({navigation, route}) => {
           <Text style={styles.role}>
             {getLastJobTitle(advocateDetails?.experiences)}
           </Text>
-
-          <View style={{marginTop: hp(0.7), paddingHorizontal: wp(1)}}>
-            <Text
-              style={{
-                color: '#294776',
-                fontFamily: 'Poppins SemiBold',
-                fontSize: wp('4.5%'),
-              }}>
-              Bio
-            </Text>
-            <Text style={styles.bio}>{advocateDetails?.headLine}</Text>
-          </View>
+          {advocateDetails?.headLine && (
+            <View style={{marginTop: hp(0.7), paddingHorizontal: wp(1)}}>
+              <Text
+                style={{
+                  color: '#294776',
+                  fontFamily: 'Poppins SemiBold',
+                  fontSize: wp('4.5%'),
+                }}>
+                Bio
+              </Text>
+              <Text style={styles.bio}>{advocateDetails?.headLine}</Text>
+            </View>
+          )}
         </View>
+
+{/* // for follower and following sections */}
+        {/* <View
+          style={{
+            width: wp('100%'),
+            marginVertical: hp(0.7),
+            paddingHorizontal: wp(1),
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            paddingHorizontal: wp('6%'),
+          }}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Follower', {id: advocateId})}>
+            <Text style={{fontFamily: 'Poppins', alignSelf: 'center'}}>
+              {advocateDetails?.follower || 0}
+            </Text>
+            <Text style={{fontFamily: 'Poppins'}}>Followers</Text>
+          </TouchableOpacity>
+
+          <View>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('Following', {id: advocateId})
+              }>
+              <Text style={{fontFamily: 'Poppins', alignSelf: 'center'}}>
+                {advocateDetails?.following || 0}
+              </Text>
+              <Text style={{fontFamily: 'Poppins'}}>Following</Text>
+            </TouchableOpacity>
+            {advocateDetails?.connection === null && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => handleConnection(advocateId)}>
+                <Text style={{fontFamily: 'Poppins'}}>Connect</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View>
+            {advocateDetails?.follow === null && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => handleFollow(advocateId)}>
+                <Text style={{fontFamily: 'Poppins'}}>Follow</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => handleMessage(advocateDetails)}>
+              <Text style={{fontFamily: 'Poppins'}}>Message</Text>
+            </TouchableOpacity>
+          </View>
+        </View> */}
 
         {/* Stats Section */}
         <View style={styles.statsContainer}>
@@ -182,7 +415,7 @@ const AdvocateDetailProfile = ({navigation, route}) => {
           </View>
           <View style={styles.verticalLine} />
           <View style={styles.stat}>
-            <Text style={styles.statNumber}>47 Booking</Text>
+            <Text style={styles.statNumber}>0 Booking</Text>
             <Text style={styles.statLabel}>Session Done</Text>
           </View>
         </View>
@@ -190,21 +423,26 @@ const AdvocateDetailProfile = ({navigation, route}) => {
         {/* Tabs Section */}
         <View style={styles.tabsContainer}>
           <TabButton
-            title="Professional Details"
+            title={`Professional\nDetails`}
             active={activeTab === 'Professional'}
             onPress={() => setActiveTab('Professional')}
           />
           <TabButton
-            title="Educational Details"
+            title={`Educational\nDetails`}
             active={activeTab === 'Educational'}
             onPress={() => setActiveTab('Educational')}
+          />
+          <TabButton
+            title="Review"
+            active={activeTab === 'Review'}
+            onPress={() => setActiveTab('Review')}
           />
         </View>
         {activeTab === 'Professional' && (
           <>
             <View style={styles.detailsContainer}>
               <Text style={styles.sectionTitle}>Practice Area</Text>
-              <View style={styles.practiceArea}>
+              {/* <View style={styles.practiceArea}>
                 {advocateDetails?.userPracticeAreas &&
                 advocateDetails?.userPracticeAreas?.length > 0 ? (
                   <View style={styles.practiceAreaRow}>
@@ -214,6 +452,25 @@ const AdvocateDetailProfile = ({navigation, route}) => {
                       </Text>
                     ))}
                   </View>
+                ) : (
+                  <Text style={styles.notFoundMessage}>
+                    No practice areas found
+                  </Text>
+                )}
+              </View> */}
+
+              <View style={styles.practiceArea}>
+                {advocateDetails?.userPracticeAreas &&
+                advocateDetails?.userPracticeAreas?.length > 0 ? (
+                  <FlatList
+                    data={advocateDetails.userPracticeAreas}
+                    keyExtractor={(item, index) => index.toString()}
+                    renderItem={({item}) => (
+                      <Text style={styles.practiceItem}>{item.name}</Text>
+                    )}
+                    numColumns={3} // Adjust number of columns for layout
+                    contentContainerStyle={styles.practiceAreaRow}
+                  />
                 ) : (
                   <Text style={styles.notFoundMessage}>
                     No practice areas found
@@ -232,7 +489,7 @@ const AdvocateDetailProfile = ({navigation, route}) => {
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Bar Association Number</Text>
                   <Text style={styles.detailValue}>
-                    {advocateDetails.bar_council_license_number || 'N/A'}
+                    {advocateDetails?.bar_council_license_number || 'N/A'}
                   </Text>
                 </View>
                 <View style={styles.detailItem}>
@@ -247,9 +504,9 @@ const AdvocateDetailProfile = ({navigation, route}) => {
                   {/* {advocateDetails.specialization?.join(', ') || 'N/A'} */}
                 </View>
                 <View style={styles.detailItem}>
-                  <Text style={styles.detailLabel}>Language Spoken</Text>
+                  <Text style={styles.detailLabel}>Language</Text>
                   <Text style={styles.detailValue}>
-                    {advocateDetails.language?.join(', ') || 'N/A'}
+                    {advocateDetails?.language?.join(', ') || 'N/A'}
                   </Text>
                 </View>
               </View>
@@ -271,20 +528,32 @@ const AdvocateDetailProfile = ({navigation, route}) => {
             </View> */}
           </>
         )}
-      </View>
-      <TouchableOpacity
+        {activeTab === 'Review' && (
+          <View style={{marginTop: 10}}>
+            <UserAdvocateReview id={advocateId} />
+          </View>
+        )}
+          <TouchableOpacity
         style={{
-          backgroundColor: 'blue',
+          backgroundColor: '#294776',
           width: wp('90%'),
-          height: hp('5%'),
+          height: hp('5.5%'),
           margin: 20,
           borderRadius: 10,
         }}
         onPress={handleFeedback}>
-        <Text style={{color: '#fff', textAlign: 'center', padding: 10}}>
+        <Text
+          style={{
+            color: '#fff',
+            textAlign: 'center',
+            padding: 10,
+            fontFamily: 'Poppins',
+          }}>
           Give Your feedback
         </Text>
       </TouchableOpacity>
+      </View>
+    
     </ScrollView>
   );
 };
@@ -304,8 +573,15 @@ const renderExperiences = experiences => {
     return date.toLocaleDateString('en-US', options);
   }
   // Sort experiences by createdAt (newest first)
+  // const sortedExperiences = [...experiences].sort((a, b) => {
+  //   return new Date(b.createdAt) - new Date(a.createdAt);
+  // });
   const sortedExperiences = [...experiences].sort((a, b) => {
-    return new Date(b.createdAt) - new Date(a.createdAt);
+    if (a.isOngoing && !b.isOngoing) {
+      return -1; // a is ongoing, so it comes before b
+    } else if (!a.isOngoing && b.isOngoing) {
+      return 1; // b is ongoing, so it comes before a
+    }
   });
 
   return sortedExperiences.map((experience, index) => {
@@ -354,8 +630,15 @@ const renderEducations = educations => {
     return date.toLocaleDateString('en-US', options);
   }
   // Create a shallow copy and sort by createdAt (newest first)
+  // const sortedEducations = [...educations].sort((a, b) => {
+  //   return new Date(b.createdAt) - new Date(a.createdAt);
+  // });
   const sortedEducations = [...educations].sort((a, b) => {
-    return new Date(b.createdAt) - new Date(a.createdAt);
+    if (a.isOngoing && !b.isOngoing) {
+      return -1; // a is ongoing, so it comes before b
+    } else if (!a.isOngoing && b.isOngoing) {
+      return 1; // b is ongoing, so it comes before a
+    }
   });
 
   return sortedEducations.map((education, index) => {
@@ -487,12 +770,13 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   ratingText: {
-    marginLeft: 5,
+    // marginLeft: 3,
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#fff',
+    height: 23,
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 1,
     borderRadius: 12,
     justifyContent: 'flex-end',
     backgroundColor: '#1262D2',
@@ -618,9 +902,15 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     marginBottom: hp('2%'),
   },
+  practiceAreaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
   practiceItem: {
     backgroundColor: '#fff',
-    padding: wp('2.5%'),
+    padding: wp('2%'),
+    height: hp('4.2%'),
     borderRadius: wp('2%'),
     marginRight: wp('1.5%'),
     marginBottom: hp('1.5%'),
@@ -628,16 +918,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     color: '#000',
     fontWeight: '400',
-    flexBasis: '30%', // Take up roughly a third of the row
-    overflow: 'hidden', // Hide overflow text
-    textOverflow: 'ellipsis', // Use ellipsis for overflow text
-    whiteSpace: 'nowrap',
     textAlign: 'center',
-  },
-  practiceAreaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap', // Allow items to wrap to the next line if needed
-    justifyContent: 'flex-start', // Align items to the start
   },
   detailItem: {
     marginBottom: hp('1%'),
@@ -646,7 +927,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: wp('3.5%'),
-    fontFamily: 'Poppins',
+    fontFamily: 'Poppins SemiBold',
     color: '#294776',
     fontWeight: '400',
   },
@@ -670,7 +951,7 @@ const styles = StyleSheet.create({
   experiencePeriod: {
     fontSize: wp('4%'),
     color: '#000',
-    fontFamily: 'Poppins SemiBold',
+    fontFamily: 'Poppins',
     // fontWeight:'600',
     marginVertical: 5,
   },

@@ -23,6 +23,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import CustomHeader from '../../../shared/CustomHeader';
 import {useGetAdvocateSlotByIdQuery} from '../../redux/api/api';
+import { handleError } from '../../../shared/authUtils';
 
 const {width} = Dimensions.get('window');
 
@@ -53,6 +54,7 @@ const ConsultationDetails = ({route}) => {
   }
 
   if (error) {
+    handleError(error);
     console.log(error);
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>

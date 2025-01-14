@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const initialState = {
   user: null, // Stores user info
   role: null, // Stores the user role
+  authToken: null, // Stores the authentication token
 };
 
 const authSlice = createSlice({
@@ -13,19 +14,27 @@ const authSlice = createSlice({
     setUser: (state, action) => {
       state.user = action.payload.user;
       state.role = action.payload.role;
-      console.log(action.payload.role);
+      state.authToken = action.payload.authToken;
     },
-    clearUser: state => {
+    clearUser: (state) => {
       state.user = null;
       state.role = null;
-
-      // Clear token and role from AsyncStorage
-      AsyncStorage.removeItem('authToken');
-      AsyncStorage.removeItem('role');
+      state.authToken = null; // Clear Redux state as well
     },
   },
 });
 
 export const {setUser, clearUser} = authSlice.actions;
+
+export const logoutUser = () => async (dispatch) => {
+  try {
+    await AsyncStorage.removeItem('authToken');
+    await AsyncStorage.removeItem('role');
+    await AsyncStorage.removeItem('refreshToken');
+    dispatch(clearUser());
+  } catch (error) {
+    console.error('Error during logout:', error);
+  }
+};
 
 export default authSlice.reducer;

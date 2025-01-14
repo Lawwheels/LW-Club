@@ -1,24 +1,28 @@
 import React, {useEffect} from 'react';
 import {Text, View, StyleSheet, ScrollView, BackHandler} from 'react-native';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
 import CustomHeader from '../../../shared/CustomHeader';
 import ContentSection from '../../../shared/ContentSection';
 
 const PrivacyPolicy = ({navigation}) => {
-  useEffect(() => {
-    const handleBackPress = () => {
-      if (navigation.isFocused()) {
-        navigation.goBack();
-        return true;
-      }
-      return false;
-    };
+  // useEffect(() => {
+  //   const handleBackPress = () => {
+  //     if (navigation.isFocused()) {
+  //       navigation.goBack();
+  //       return true;
+  //     }
+  //     return false;
+  //   };
 
-    BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+  //   BackHandler.addEventListener('hardwareBackPress', handleBackPress);
 
-    return () => {
-      BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
-    };
-  }, [navigation]);
+  //   return () => {
+  //     BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+  //   };
+  // }, [navigation]);
 
   return (
     <View style={styles.container}>
@@ -79,6 +83,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
+    paddingTop:hp('3%')
   },
   scrollView: {
     flexGrow: 1,

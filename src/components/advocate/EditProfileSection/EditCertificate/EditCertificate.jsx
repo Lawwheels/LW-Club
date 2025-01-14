@@ -23,6 +23,7 @@ import {
   useEditCertificateMutation,
   useGetCertificateByIdQuery,
 } from '../../../../redux/api/api';
+import { handleError } from '../../../../../shared/authUtils';
 
 const validationSchema = Yup.object().shape({
   firmName: Yup.string().required('Company name is required'),
@@ -68,9 +69,10 @@ const EditCertificate = ({route}) => {
   }
 
   if (error) {
-    console.log(error);
+    console.log("editcertificate",error);
+    handleError(error)
     showMessage({
-      message: `An error occurred: ${error.message}`,
+      message: `An error occurred: ${error?.message}`,
       type: 'danger',
       titleStyle: {fontFamily: 'Poppins'},
       style: {backgroundColor: 'red'},
@@ -157,7 +159,7 @@ const EditCertificate = ({route}) => {
             return (
               <View style={styles.experienceItem}>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Company Name</Text>
+                  <Text style={styles.inputLabel}>Company Name<Text style={{ color: 'red' }}> *</Text></Text>
                   <TextInput
                     placeholder="Enter Name"
                     style={styles.input}
@@ -170,7 +172,7 @@ const EditCertificate = ({route}) => {
                   )}
                 </View>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Certificate Name</Text>
+                  <Text style={styles.inputLabel}>Certificate Name<Text style={{ color: 'red' }}> *</Text></Text>
                   <TextInput
                     placeholder="Enter Name"
                     style={styles.input}
@@ -187,7 +189,7 @@ const EditCertificate = ({route}) => {
                   )}
                 </View>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Certificate Number</Text>
+                  <Text style={styles.inputLabel}>Certificate Number<Text style={{ color: 'red' }}> *</Text></Text>
                   <TextInput
                     placeholder="Enter Number"
                     style={styles.input}
@@ -204,7 +206,7 @@ const EditCertificate = ({route}) => {
                   )}
                 </View>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Issue Date</Text>
+                  <Text style={styles.inputLabel}>Issue Date<Text style={{ color: 'red' }}> *</Text></Text>
                   <TouchableOpacity
                     style={styles.customButton}
                     onPress={() => setShowIssueDatePicker(true)}>

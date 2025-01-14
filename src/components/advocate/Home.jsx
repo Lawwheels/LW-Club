@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   FlatList,
+  StatusBar,
+  RefreshControl,
   ImageBackground,
   ActivityIndicator,
   TouchableWithoutFeedback,
@@ -17,16 +19,26 @@ import {
 } from 'react-native-responsive-screen';
 import {AnimatedCircularProgress} from 'react-native-circular-progress';
 import LinearGradient from 'react-native-linear-gradient';
+import {createShimmerPlaceholder} from 'react-native-shimmer-placeholder';
 import {
   useGetAdvocateQuery,
   useGetAdvocateSlotsQuery,
 } from '../../redux/api/api';
+import StarRating from '../../../shared/StarRating';
+import { handleError } from '../../../shared/authUtils';
+
+const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient);
 
 const Home = ({navigation}) => {
-  const {data, error, isLoading} = useGetAdvocateQuery();
+  const [refresh, setRefresh] = useState(false);
+  const {
+    data,
+    error,
+    isLoading,
+    refetch: refetchAdvocateData,
+  } = useGetAdvocateQuery();
   const {data: slotsData, refetch} = useGetAdvocateSlotsQuery({});
-  console.log('slotData', slotsData);
-  // Handle loading state
+
   if (isLoading) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -35,31 +47,68 @@ const Home = ({navigation}) => {
     );
   }
 
+  const pullMe = async () => {
+    try {
+      setRefresh(true);
+      await Promise.all([
+        refetchAdvocateData(),
+        refetch(), // Refetch advocate data
+      ]);
+    } catch (error) {
+      handleError(error);
+      console.error('Error during refetch:', error); // Handle errors if needed
+    } finally {
+      setRefresh(false); // Hide the refresh indicator after both data are fetched
+    }
+  };
+
+  // if (isLoading) {
+  //   return (
+  //     <View style={styles.shimmerContainer}>
+  //       <View
+  //         style={{
+  //           flexDirection: 'row',
+  //           justifyContent: 'space-between',
+  //           maxWidth: '90%',
+  //         }}>
+  //         <View style={{width:'70%'}}>
+  //           <ShimmerPlaceholder style={[styles.shimmerText,{width:'70%'}]} />
+  //           <ShimmerPlaceholder style={styles.shimmerText} />
+  //         </View>
+  //         <ShimmerPlaceholder
+  //           style={{width: 70, height: 70, borderRadius: 50}}
+  //         />
+  //          </View>
+  //         <View>
+  //           <ShimmerPlaceholder style={[styles.shimmerText]} />
+  //           <ShimmerPlaceholder style={[styles.shimmerText]} />
+  //         </View>
+
+  //     </View>
+  //   );
+  // }
+
   // Handle error state
   if (error) {
-    console.log(error);
-    return <Text>An error occurred: {error.message}</Text>;
+    console.log(error)
+    handleError(error)
+    return <Text>An error occurred: {error?.data}</Text>
   }
-
-  // useEffect(() => {
-  //   if(data && data?.data?.length > 0) {
-  //     setName(data.data[0].name); // Store data in local state
-  //   }
-  // }, [data]);
 
   const items = [
     {
       id: 1,
-      name: 'Notifications',
+      name: 'View Invitation',
       image: require('../../../assets/images/notification.png'),
-      navigateTo: 'Notification',
+      navigateTo: 'AllUserRequest',
     },
     {
       id: 2,
-      name: 'Messages',
-      image: require('../../../assets/images/send.png'),
-      // navigateTo:"FeedbackForm"
-      // navigateTo: 'AdvocateSlots',
+      name: 'Notifications\n',
+      // name: 'Messages\n',
+      // image: require('../../../assets/images/send.png'),
+      image: require('../../../assets/images/notification.png'),
+      navigateTo: 'Notification',
     },
     {
       id: 3,
@@ -69,9 +118,9 @@ const Home = ({navigation}) => {
     },
     {
       id: 4,
-      name: 'Check Feedbacks',
+      name:'Chat\n',
       image: require('../../../assets/images/message.png'),
-      navigateTo: 'Feedback',
+      // navigateTo: 'AdvocateChat'
     },
   ];
 
@@ -79,7 +128,7 @@ const Home = ({navigation}) => {
     {
       id: 1,
       title: 'Total',
-      number: '101',
+      number: '0',
       description: 'Appointments',
       color: '#FF00AA',
       backgroundImage: require('../../../assets/images/completed.png'),
@@ -88,7 +137,7 @@ const Home = ({navigation}) => {
     {
       id: 2,
       title: 'Completed',
-      number: '82',
+      number: '0',
       description: 'Appointments',
       color: '#1467DA',
       backgroundImage: require('../../../assets/images/upcoming.png'),
@@ -97,7 +146,7 @@ const Home = ({navigation}) => {
     {
       id: 3,
       title: 'Upcoming',
-      number: '12',
+      number: '0',
       description: 'Appointments',
       color: '#FFA500',
       backgroundImage: require('../../../assets/images/missed.png'),
@@ -106,7 +155,7 @@ const Home = ({navigation}) => {
     {
       id: 4,
       title: 'Missed',
-      number: '8',
+      number: '0',
       description: 'Appointments',
       color: '#FF0043',
       backgroundImage: require('../../../assets/images/total.png'),
@@ -115,132 +164,137 @@ const Home = ({navigation}) => {
   ];
 
   return (
-    <ScrollView style={styles.container}>
-      <TouchableWithoutFeedback
-        onPress={() => navigation.navigate('UpdateBio')}>
-        <LinearGradient
-          colors={['#1262D2', '#17316D']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
-          style={styles.banner}>
-          <View style={styles.bannerText}>
-            <Text style={styles.bannerTitle}>
-              Finish setting up your profile to attract more clients!
-            </Text>
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                maxWidth: '50%',
-              }}>
-              <View style={{marginTop: hp('1%')}}>
-                <Text style={styles.greeting}>
-                  Hi, {data && data?.data[0]?.name} !
-                </Text>
+    <>
+      <StatusBar
+        barStyle="dark-content" // Options: 'default', 'light-content', 'dark-content'
+        backgroundColor="#F3F7FF" // Background color for Android
+      />
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refresh} onRefresh={pullMe} />
+        }>
+        <TouchableWithoutFeedback
+          onPress={() => navigation.navigate('UpdateBio')}>
+          <LinearGradient
+            colors={['#1262D2', '#17316D']}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 0}}
+            style={styles.banner}>
+            <View style={styles.bannerText}>
+              <Text style={styles.bannerTitle}>
+                Finish setting up your profile to attract more clients!
+              </Text>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  maxWidth: '50%',
+                }}>
+                <View style={{marginTop: hp('1%')}}>
+                  <Text style={styles.greeting}>
+                    Hi, {data && data?.data[0]?.name} !
+                  </Text>
 
-                <Text style={styles.profileComplete}>
-                  <Text style={styles.percentage}>Profile 60% Complete</Text>
-                </Text>
-              </View>
+                  <Text style={styles.profileComplete}>
+                    <Text style={styles.percentage}>Profile 60% Complete</Text>
+                  </Text>
+                </View>
 
-              {/* <TouchableOpacity
-              style={styles.completeProfileButton}
-              onPress={() => navigation.navigate('AdvocateProfile')}>
-              <Text style={styles.completeProfileText}>Complete Profile</Text>
-            </TouchableOpacity> */}
-              <View style={{marginTop: hp('3.5%')}}>
-                <View style={styles.starRating}>
-                  <View style={styles.starsContainer}>
-                    {[...Array(5)].map((_, index) => (
-                      <Image
-                        key={index}
-                        source={require('../../../assets/images/star.png')}
-                        style={styles.starImage}
-                      />
-                    ))}
-                  </View>
+                <View style={{marginTop: hp('2.3%')}}>
+                  <StarRating rating={data?.data[0]?.averageRating || 0} />
                 </View>
               </View>
             </View>
-          </View>
-          <View style={styles.profileContainer}>
-            <AnimatedCircularProgress
-              size={70} // Adjust the size of the progress
-              width={3} // Thickness of the progress bar
-              backgroundWidth={1} // Background width should be smaller than progress
-              fill={60}
-              tintColor="#1467DA" // A contrasting color for the progress (yellow)
-              backgroundColor="#000">
-              {() => (
-                <Image
-                  source={
-                    data &&
-                    data?.data[0]?.profilePic &&
-                    data.data[0].profilePic.url
-                      ? {uri: data.data[0].profilePic.url}
-                      : require('../../../assets/images/avatar.png')
-                  } // Path to the profile image
-                  style={styles.profileImage}
-                />
-              )}
-            </AnimatedCircularProgress>
-          </View>
-        </LinearGradient>
-      </TouchableWithoutFeedback>
-      {/* User Information */}
-      {/* <View style={styles.userInfo}>
-        <View>
-          <Text style={styles.userName}>{data && data?.data[0]?.name}</Text>
-          <Text style={styles.userId}>
-            {data && data?.data[0]?.bar_council_license_number}
-          </Text>
-        </View>
-        <View style={styles.starRating}>
-          <Text style={styles.stars}>★★★★★</Text>
-        </View>
-      </View> */}
-      <View style={styles.cardContainer}>
-        {items.map(item => (
-          <LinearGradient
-            colors={['#E4EEFC', '#F3F7FF']}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 0}}
-            style={styles.card}>
-            <TouchableOpacity
-              key={item.id}
-              style={styles.centerContent}
-              onPress={() =>
-                item.navigateTo
-                  ? navigation.navigate(item.navigateTo)
-                  : console.log('No navigation available')
-              }>
-              <Image source={item.image} style={styles.iconImage} />
-              <Text style={styles.cardLabel}>{item.name}</Text>
-            </TouchableOpacity>
+            <View style={styles.profileContainer}>
+              <AnimatedCircularProgress
+                size={70}
+                width={3}
+                backgroundWidth={1}
+                fill={60}
+                tintColor="#1467DA"
+                backgroundColor="#000">
+                {() => (
+                  <Image
+                    source={
+                      data &&
+                      data?.data[0]?.profilePic &&
+                      data.data[0].profilePic.url
+                        ? {uri: data.data[0].profilePic.url}
+                        : require('../../../assets/images/avatar.png')
+                    } // Path to the profile image
+                    style={styles.profileImage}
+                  />
+                )}
+              </AnimatedCircularProgress>
+            </View>
           </LinearGradient>
-        ))}
-      </View>
+        </TouchableWithoutFeedback>
+        {/* <View style={styles.cardContainer}>
+          {items.map(item => (
+            <LinearGradient
+              colors={['#E4EEFC', '#F3F7FF']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 0}}
+              style={styles.card}>
+              <TouchableOpacity
+                key={item.id}
+                style={styles.centerContent}
+                onPress={() =>
+                  item.navigateTo
+                    ? navigation.navigate(item.navigateTo)
+                    : console.log('No navigation available')
+                }>
+                <Image source={item.image} style={styles.iconImage} />
+                <Text style={styles.cardLabel}>{item.name}</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          ))}
+        </View> */}
+        <View style={styles.cardContainer}>
+          {items.map(item => (
+            <LinearGradient
+              key={item.id} // Move the key to the outermost element
+              colors={['#E4EEFC', '#F3F7FF']}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 0}}
+              style={styles.card}>
+              <TouchableOpacity
+                style={styles.centerContent}
+                onPress={() =>
+                  item.navigateTo
+                    ? navigation.navigate(item.navigateTo)
+                    : console.log('No navigation available')
+                }>
+                <View style={styles.iconContainer}>
+                  <Image source={item.image} style={styles.iconImage} />
+                </View>
+                <Text style={styles.cardLabel}>{item.name}</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          ))}
+        </View>
 
-      {/* Upcoming Appointments */}
-      <View style={styles.statsContainer}>
-        <Text style={styles.heading}>Appointment Stats</Text>
-        <View style={styles.statsSubContainer}>
-          {cards.map(card => (
-            <ImageBackground
-              key={card.id}
-              source={card.backgroundImage} // Set your background image here
-              style={styles.statsCard}
-              resizeMode="cover" // Adjust the resize mode as needed
-              imageStyle={{borderRadius: 20}}>
-              <Image source={card.icon} style={styles.icon} />
-              <View style={styles.cardContent}>
-                <Text style={styles.statsTitle}>{card.number}</Text>
+        {/* Upcoming Appointments */}
+        <View style={styles.statsContainer}>
+          <Text style={styles.heading}>Appointment Stats</Text>
+          <View style={styles.statsSubContainer}>
+            {cards.map(card => (
+              <ImageBackground
+                key={card.id}
+                source={card.backgroundImage} // Set your background image here
+                style={styles.statsCard}
+                resizeMode="cover" // Adjust the resize mode as needed
+                imageStyle={{borderRadius: 20}}>
+                <Image source={card.icon} style={styles.icon} />
+                <View style={styles.cardContent}>
+                  <Text style={styles.statsTitle}>{card.number}</Text>
 
-                {/* <View style={{flexDirection: 'row'}}> */}
-                <Text style={[styles.number, {color: card.color}]}>
-                  {card.title}
-                </Text>
-                {/* <Text
+                  {/* <View style={{flexDirection: 'row'}}> */}
+                  <Text style={[styles.number, {color: card.color}]}>
+                    {card.title}
+                  </Text>
+                  {/* <Text
                     style={[
                       styles.description,
                       {color: card.color, marginLeft: 2},
@@ -248,123 +302,136 @@ const Home = ({navigation}) => {
                     {card.description}
                   </Text>
                 </View> */}
-              </View>
-            </ImageBackground>
-          ))}
+                </View>
+              </ImageBackground>
+            ))}
+          </View>
         </View>
-      </View>
 
-      {/* Recent Consultation */}
-      <View style={styles.recentConsultationContainer}>
-        <Text style={styles.recentConsultationTitle}>
-          Upcoming Consultation
-        </Text>
-        <View style={{paddingVertical: hp('0.5%')}}>
-          {slotsData?.data?.length === 0 ||
-          !slotsData?.data?.some(item =>
-            item.slotes.some(slot => slot.status === 'Upcoming'),
-          ) ? (
-            // If there is no data or no upcoming slots, show the message
-            <Text style={styles.noCreatedSlotMessage}>No Upcoming Slots</Text>
-          ) : (
-            <FlatList
-              horizontal
-              data={slotsData?.data}
-              keyExtractor={item => item._id}
-              renderItem={({item}) => (
-                <>
-                  {item.slotes
-                    .filter(slot => slot.status === 'Upcoming')
-                    .map(slot => (
-                      <TouchableWithoutFeedback
-                        onPress={() =>
-                          navigation.navigate('ConsultationDetails', {
-                            id: slot._id,
-                          })
-                        }>
-                        <ImageBackground
-                          key={slot._id}
-                          source={require('../../../assets/images/consultation.png')}
-                          style={styles.consultationCard}
-                          imageStyle={styles.cardBorder}>
-                          <View style={styles.consultationHeader}>
-                            <Text
-                              style={[
-                                styles.consultantName,
-                                {color: '#1262D2'},
-                              ]}>
-                              {slot.client.name}
-                            </Text>
+        {/* Recent Consultation */}
+        <View style={styles.recentConsultationContainer}>
+          <Text style={styles.recentConsultationTitle}>
+            Upcoming Consultation
+          </Text>
+          <View style={{paddingVertical: hp('0.5%')}}>
+            {slotsData?.data?.length === 0 ||
+            !slotsData?.data?.some(item =>
+              item.slotes.some(slot => slot.status === 'Upcoming'),
+            ) ? (
+              <View
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: wp('100%'),
+              }}>
+              <Image
+                source={require('../../../assets/images/NoResult.png')}
+                style={{width: 150, height: 150}}
+              />
+              <Text style={styles.noCreatedSlotMessage}>
+                No upcoming slot
+              </Text>
+            </View>
+            ) : (
+              <FlatList
+                horizontal
+                data={slotsData?.data}
+                keyExtractor={item => item._id}
+                renderItem={({item}) => (
+                  <>
+                    {item?.slotes
+                      .filter(slot => slot.status === 'Upcoming')
+                      .map(slot => (
+                        <TouchableWithoutFeedback
+                          onPress={() =>
+                            navigation.navigate('ConsultationDetails', {
+                              id: slot._id,
+                            })
+                          }>
+                          <ImageBackground
+                            key={slot._id}
+                            source={require('../../../assets/images/consultation.png')}
+                            style={styles.consultationCard}
+                            imageStyle={styles.cardBorder}>
+                            <View style={styles.consultationHeader}>
+                              <Text
+                                style={[
+                                  styles.consultantName,
+                                  {color: '#1262D2'},
+                                ]}>
+                                {slot.client.name}
+                              </Text>
 
-                            <View
-                              style={[
-                                styles.callContainer,
-                                {borderColor: '#1262D2'},
-                              ]}>
+                              <View
+                                style={[
+                                  styles.callContainer,
+                                  {borderColor: '#1262D2'},
+                                ]}>
+                                <Image
+                                  source={require('../../../assets/images/schedule/upcomingIcon.png')}
+                                  style={styles.callIcon}
+                                  resizeMode="contain"
+                                />
+                              </View>
+                            </View>
+                            <View style={{flexDirection: 'row'}}>
                               <Image
-                                source={require('../../../assets/images/schedule/upcomingIcon.png')}
-                                style={styles.callIcon}
+                                source={require('../../../assets/images/icons/note.png')}
+                                style={styles.consultIcon}
                                 resizeMode="contain"
                               />
+                              <Text
+                                style={[
+                                  styles.consultationDate,
+                                  {color: '#1262D2'},
+                                ]}>
+                                {new Date(item.date).toLocaleDateString(
+                                  'en-GB',
+                                  {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  },
+                                )}
+                              </Text>
                             </View>
-                          </View>
-                          <View style={{flexDirection: 'row'}}>
-                            <Image
-                              source={require('../../../assets/images/icons/note.png')}
-                              style={styles.consultIcon}
-                              resizeMode="contain"
-                            />
-                            <Text
-                              style={[
-                                styles.consultationDate,
-                                {color: '#1262D2'},
-                              ]}>
-                              {new Date(item.date).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric',
-                              })}
-                            </Text>
-                          </View>
-                          <View style={{flexDirection: 'row'}}>
-                            <Image
-                              source={require('../../../assets/images/icons/note.png')}
-                              style={styles.consultIcon}
-                              resizeMode="contain"
-                            />
-                            <Text
-                              style={[
-                                styles.consultationDate,
-                                {color: '#1262D2'},
-                              ]}>
-                              {Array.isArray(slot.serviceType)
-                                ? slot.serviceType.join(', ')
-                                : slot.serviceType}
-                            </Text>
-                          </View>
-
-                          {/* <Text style={styles.consultationDescription}>
-                                  {slot.description ||
-                                    'No description available'}
-                                </Text> */}
-                        </ImageBackground>
-                      </TouchableWithoutFeedback>
-                    ))}
-                </>
-              )}
-              showsHorizontalScrollIndicator={false}
-            />
-          )}
+                            <View style={{flexDirection: 'row'}}>
+                              <Image
+                                source={require('../../../assets/images/icons/time.png')}
+                                style={styles.consultIcon}
+                                resizeMode="contain"
+                              />
+                              
+                              <Text
+                                style={[
+                                  styles.consultationDate,
+                                  {color: '#1262D2'},
+                                ]}>
+                                {Array.isArray(slot.serviceType)
+                                  ? slot.serviceType.join(', ')
+                                  : slot.serviceType}
+                              </Text>
+                            </View>
+                          </ImageBackground>
+                        </TouchableWithoutFeedback>
+                      ))}
+                  </>
+                )}
+                showsHorizontalScrollIndicator={false}
+              />
+            )}
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#F3F7FF',
+    // flex: 1,
+    // backgroundColor: '#F3F7FF',
+    // paddingTop: hp('4.5%'),
   },
   banner: {
     paddingVertical: hp('2%'),
@@ -441,54 +508,6 @@ const styles = StyleSheet.create({
     color: '#6D6A6A',
     marginTop: 0, // Ensures no space from the top
     lineHeight: 12, // Matches font size for tight spacing
-  },
-  starRating: {
-    flexDirection: 'row',
-    marginVertical: hp('1%'),
-    marginHorizontal: 5,
-    justifyContent: 'flex-end',
-  },
-  starsContainer: {
-    flexDirection: 'row',
-    marginRight: 5, // Adjust as needed
-  },
-  starImage: {
-    width: 14, // Adjust to your image size
-    height: 14, // Adjust to your image size
-    marginRight: 2,
-  },
-  cardContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginHorizontal: wp('5%'),
-    marginTop: hp('0.5%'),
-  },
-  card: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: wp('1%'),
-    paddingVertical: hp('1.5%'),
-    borderWidth: 1,
-    borderColor: '#1467DA',
-    borderRadius: wp('2%'),
-    width: wp('21%'),
-  },
-  centerContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconImage: {
-    width: wp('5%'),
-    height: hp('3%'),
-    resizeMode: 'contain',
-  },
-  cardLabel: {
-    marginTop: hp('1%'),
-    fontSize: wp('2.6%'),
-    color: '#294776',
-    fontFamily: 'Poppins SemiBold',
-    textAlign: 'center',
-    lineHeight: hp('1.7%'),
   },
   heading: {
     fontSize: wp('3.6%'),
@@ -614,6 +633,63 @@ const styles = StyleSheet.create({
     color: '#888', // Or any color of your choice
     marginVertical: 10,
     fontFamily: 'Poppins',
+  },
+  shimmerBox: {
+    paddingVertical: hp('2%'),
+    paddingHorizontal: wp('5%'),
+    borderRadius: wp('2.5%'),
+    marginVertical: hp('2%'),
+    marginHorizontal: wp('5%'),
+  },
+  shimmerText: {
+    // width: '70%',
+    height: 20,
+    borderRadius: 4,
+    marginBottom: 10,
+  },
+  shimmerContainer: {
+    maxWidth: '90%',
+    margin: 20,
+  },
+  cardContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', // Ensures cards wrap if there's not enough space
+    justifyContent: 'space-between',
+    marginHorizontal: wp('5%'),
+    marginTop: hp('0.5%'),
+  },
+  card: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: wp('1%'),
+    paddingVertical: hp('1.5%'),
+    borderWidth: 1,
+    borderColor: '#1467DA',
+    borderRadius: wp('2%'),
+    width: wp('21%'),
+  },
+  centerContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    alignItems: 'center', // Center the icon horizontally
+    justifyContent: 'center', // Center the icon vertically
+    width: wp('5%'), // Maintain consistent spacing for icons
+    height: hp('3%'),
+    marginBottom: hp('0.5%'), // Space between icon and text
+  },
+  iconImage: {
+    width: '100%', // Full width of the container
+    height: '100%', // Full height of the container
+    resizeMode: 'contain',
+  },
+  cardLabel: {
+    fontSize: wp('2.6%'),
+    color: '#294776',
+    fontFamily: 'Poppins SemiBold',
+    textAlign: 'center',
+    lineHeight: hp('1.7%'),
   },
 });
 

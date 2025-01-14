@@ -1,4 +1,4 @@
-package com.lawwheelsclub
+package law.wheels.club
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate

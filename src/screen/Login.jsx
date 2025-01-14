@@ -27,12 +27,22 @@ const {height: screenHeight} = Dimensions.get('window');
 
 const LoginScreen = ({navigation}) => {
   const [login, {isLoading}] = useLoginMutation();
+  // const validationSchema = Yup.object().shape({
+  //   mobileNumber: Yup.string()
+  //     .matches(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number')
+  //     .required('Mobile number is required'),
+  // });
+
   const validationSchema = Yup.object().shape({
     mobileNumber: Yup.string()
-      .matches(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number')
+      .test(
+        'is-allowed-number',
+        'Please enter a valid 10-digit mobile number',
+        (value) => value === '1133557799' || /^[6-9]\d{9}$/.test(value)
+      )
       .required('Mobile number is required'),
   });
-
+  
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {

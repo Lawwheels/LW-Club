@@ -50,7 +50,7 @@ const notifications = [
       'https://images.unsplash.com/photo-1719937206589-d13b6b008196?q=80&w=2700&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     message:
       'has booked a consultation with you. Check your appointments for more details.',
-    timestamp:'07 : 30 AM',
+    timestamp: '07 : 30 AM',
   },
   {
     id: '2',
@@ -59,7 +59,7 @@ const notifications = [
       'https://images.unsplash.com/photo-1719937206589-d13b6b008196?q=80&w=2700&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     message:
       'has left feedback on your recent consultation. Check the feedback section to view it.',
-      timestamp: '08 : 30 AM',
+    timestamp: '08 : 30 AM',
   },
   {
     id: '3',
@@ -71,7 +71,6 @@ const notifications = [
     timestamp: '09 : 30 AM',
   },
 ];
-
 
 const UserNotification = () => {
   const renderNotification = ({item}) => (
@@ -110,12 +109,14 @@ const UserNotification = () => {
 
   return (
     <>
-      <CustomHeader
-        title={'Notifications'}
-        icon={require('../../../assets/images/back.png')}
-      />
-      <ScrollView>
-        <View style={styles.container}>
+      <View style={styles.container}>
+        <CustomHeader
+          title={'Notifications'}
+          icon={require('../../../assets/images/back.png')}
+        />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={{paddingHorizontal: wp('5%')}}>
           <FlatList
             data={notification}
             renderItem={renderNotification}
@@ -134,7 +135,7 @@ const UserNotification = () => {
             )}
             showsVerticalScrollIndicator={false}
           />
-           <FlatList
+          <FlatList
             data={notifications}
             renderItem={renderNotification}
             keyExtractor={item => item.id}
@@ -143,8 +144,8 @@ const UserNotification = () => {
             )}
             showsVerticalScrollIndicator={false}
           />
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </>
   );
 };
@@ -153,8 +154,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
-    paddingHorizontal: wp('5%'),
-    // paddingTop: 10,
+
+    paddingTop: hp('2.5%'),
   },
   sectionTitle: {
     fontSize: wp('4.5%'),

@@ -21,7 +21,9 @@ const CustomButton = ({
         style={styles.button}>
         <View style={styles.buttonContent}>
           {loading && <ActivityIndicator size="small" color="#fff" style={styles.loader} />}
-          <Text style={styles.buttonText}>{title}</Text>
+          <Text style={[styles.buttonText, loading && { marginLeft: 0 }]}>
+            {title}
+          </Text>
         </View>
       </LinearGradient>
     </TouchableOpacity>
@@ -43,6 +45,7 @@ const styles = StyleSheet.create({
   buttonContent: {
     flexDirection: 'row', // Align children horizontally
     alignItems: 'center',  // Center the items vertically
+    justifyContent: 'center', // Center the content horizontally
   },
   buttonText: {
     color: '#fff',

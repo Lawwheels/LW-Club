@@ -1,152 +1,4 @@
-// import React from 'react';
-// import {
-//   View,
-//   Text,
-//   Image,
-//   StyleSheet,
-//   TouchableWithoutFeedback,
-// } from 'react-native';
-// import {
-//   widthPercentageToDP as wp,
-//   heightPercentageToDP as hp,
-// } from 'react-native-responsive-screen';
-
-// const UserHome = () => {
-//   return (
-//     <TouchableWithoutFeedback>
-//       <View style={styles.cardContainer}>
-//         <View style={{flexDirection: 'row'}}>
-//           <View style={styles.leftContainer}>
-//             <Image
-//               style={styles.circleImage}
-//               source={require('../../../assets/images/user.png')}
-//             />
-//           </View>
-//           <View style={styles.rightContainer}>
-//             <View style={styles.infoContainer}>
-//               <View
-//                 style={{
-//                   flexDirection: 'row',
-//                   justifyContent: 'space-between',
-//                   width: wp(65),
-//                 }}>
-//                 <View style={styles.lawyerDetails}>
-//                   <Text style={styles.lawyerName}>Ankush Gupta</Text>
-//                   <Text style={styles.lawyerTitle}>Civil Lawyer</Text>
-//                   <View style={styles.locationContainer}>
-//                     <Text style={styles.locationText}>
-//                       Tilak Nagar, New Delhi
-//                     </Text>
-//                   </View>
-//                 </View>
-//                 <View style={styles.starRating}>
-//                   <Text style={styles.stars}>★★★★★</Text>
-//                 </View>
-//               </View>
-//             </View>
-//           </View>
-//         </View>
-//         <View style={styles.aboutContainer}>
-//           <Text style={styles.aboutHeading}>About</Text>
-//           <Text style={styles.aboutText}>
-//             Chris Evans is a seasoned civil lawyer with over 5 years of
-//             experience in specific civil law areas, e.g., contract disputes and
-//             property law. Known for their strategic approach.
-//           </Text>
-//         </View>
-//       </View>
-//     </TouchableWithoutFeedback>
-//   );
-// };
-
-// export default UserHome;
-
-// const styles = StyleSheet.create({
-//   cardContainer: {
-//     marginTop: 40,
-//     borderRadius: 10,
-//     backgroundColor: '#E4EEFC',
-//     marginLeft: wp(6),
-//     marginRight: wp(5),
-//     height: hp(25),
-//     padding: 10,
-//     position: 'relative', // Ensure the card itself is relative for proper alignment
-//   },
-//   leftContainer: {
-//     marginLeft: -30, // Shift left outside the card
-//     marginTop: -30, // Shift upward outside the card
-//     alignItems: 'center',
-//     justifyContent: 'flex-start',
-//   },
-//   circleImage: {
-//     width: 80,
-//     height: 80,
-//     borderRadius: 15,
-//     borderWidth: 1,
-//     borderColor: '#1262D2',
-//   },
-//   rightContainer: {
-//     // flex: 1,
-//     justifyContent: 'flex-start',
-//     paddingRight: 10,
-//   },
-
-//   infoContainer: {
-//     flex: 1,
-//     paddingHorizontal: 20,
-//     paddingVertical: 10,
-//   },
-//   lawyerDetails: {
-//     marginBottom: 10,
-//   },
-//   lawyerName: {
-//     fontFamily: 'Poppins SemiBold',
-//     fontSize: 18,
-//     color: '#294776',
-//     lineHeight: 20,
-//   },
-//   lawyerTitle: {
-//     color: '#666667',
-//     fontFamily: 'Poppins',
-//     fontSize: 14,
-//     lineHeight: 20,
-//     // marginVertical: 5,
-//   },
-//   starRating: {
-//     flexDirection: 'row',
-//   },
-//   stars: {
-//     color: '#FFA800', // Gold color for stars
-//     fontSize: 24,
-//     lineHeight: 22,
-//   },
-//   locationContainer: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     // marginVertical: 5,
-//   },
-//   locationText: {
-//     color: '#294776',
-//     fontFamily: 'Poppins',
-//     fontWeight: '400',
-//     fontSize: 12,
-//   },
-//   aboutContainer: {
-//     marginTop: hp(3),
-//     backgroundColor: '#F3F7FF',
-//     padding: 10,
-//     borderRadius: 5,
-//   },
-//   aboutHeading: {
-//     fontWeight: 'bold',
-//     marginBottom: 5,
-//   },
-//   aboutText: {
-//     color: '#6B7280',
-//   },
-// });
-
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -160,32 +12,41 @@ import {
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
+  RefreshControl,
+  BackHandler,
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import {showMessage} from 'react-native-flash-message';
 import {AnimatedCircularProgress} from 'react-native-circular-progress';
+import {createShimmerPlaceholder} from 'react-native-shimmer-placeholder';
 import LinearGradient from 'react-native-linear-gradient';
+import {getSocket} from '../../../socket';
 import {
   useGetAdviseSeekerQuery,
   useGetAllAdvocateQuery,
   useGetUserSlotQuery,
 } from '../../redux/api/api';
 import navigationStrings from '../../constants/navigationStrings';
+import StarRating from '../../../shared/StarRating';
+import {handleError} from '../../../shared/authUtils';
+
+const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient);
 
 const items = [
   {
     id: 1,
-    name: 'Notifications',
+    name: 'Notifications\n',
     image: require('../../../assets/images/notification.png'),
     navigateTo: 'UserNotification',
   },
   {
     id: 2,
-    name: 'Messages',
+    name: 'Messages\n',
     image: require('../../../assets/images/send.png'),
-    // navigateTo: 'AdvocateDetailProfile',
+    // navigateTo: 'UserChat',
   },
   {
     id: 3,
@@ -195,35 +56,35 @@ const items = [
   },
   {
     id: 4,
-    name: 'Feedbacks',
+    name: 'Check Feedbacks',
     image: require('../../../assets/images/message.png'),
-    navigateTo: 'FeedbackForm',
+    // navigateTo: 'FeedbackForm',
   },
 ];
 
 const data = [
   {
-    id: '1',
+    id: 1,
     name: 'Kajal Gupta',
     profession: 'Civil Lawyer',
     status: 'On Call',
     time: 'In 15 min',
   },
   {
-    id: '2',
+    id: 2,
     name: 'Rajeev Gupta',
     profession: 'Civil Lawyer',
     status: 'On Call',
   },
   {
-    id: '3',
+    id: 3,
     name: 'Rohan Gupta',
     profession: 'Civil Lawyer',
     status: 'On Call',
     time: 'In 15 min',
   },
   {
-    id: '4',
+    id: 4,
     name: 'Ram Gupta',
     profession: 'Civil Lawyer',
     status: 'On Call',
@@ -232,17 +93,25 @@ const data = [
 ];
 
 const UserHome = ({navigation}) => {
-  const {data: userData, isLoading, error} = useGetAdviseSeekerQuery();
+  const [refresh, setRefresh] = useState(false);
+  const {
+    data: userData,
+    isLoading,
+    error,
+    refetch: refetchAdviseData,
+  } = useGetAdviseSeekerQuery();
   const {
     data: advocateData,
     isLoading: loading,
     error: isError,
+    refetch: refetchAdvocateData,
   } = useGetAllAdvocateQuery({
-    role: 'Advocate', // Specify the role as 'advocate'
-    search: '', // Optional search term
-    page: 1, // Optional page number
-    resultPerPage: 20, // Optional results per page
+    role: 'Advocate',
+    search: '',
+    page: 1,
+    resultPerPage: 20,
   });
+  // console.log("advocateData",advocateData)
   const formattedDate = new Date()
     ? new Date().toLocaleDateString('en-CA')
     : null;
@@ -251,6 +120,24 @@ const UserHome = ({navigation}) => {
   });
 
   const consultation = slotsData?.data || [];
+
+  const socket = getSocket();
+  // console.log("socket",socket)
+
+  const pullMe = async () => {
+    try {
+      setRefresh(true);
+      await Promise.all([
+        refetchAdviseData(),
+        refetchAdvocateData(),
+        refetch(), // Refetch advocate data
+      ]);
+    } catch (error) {
+      console.error('Error during refetch:', error); // Handle errors if needed
+    } finally {
+      setRefresh(false); // Hide the refresh indicator after both data are fetched
+    }
+  };
 
   const formattedSlots = consultation.map(item => ({
     // date: new Date(item.date).toLocaleDateString(), // Format the date
@@ -266,7 +153,22 @@ const UserHome = ({navigation}) => {
     item.slots.map(slot => ({...slot, date: item.date})),
   );
 
-  console.log('UserHome', slotData);
+  // console.log('UserHome', slotData);
+  useEffect(() => {
+    const handleBackPress = () => {
+      if (navigation.isFocused()) {
+        navigation.goBack();
+        return true;
+      }
+      return false;
+    };
+
+    BackHandler.addEventListener('hardwareBackPress', handleBackPress);
+
+    return () => {
+      BackHandler.removeEventListener('hardwareBackPress', handleBackPress);
+    };
+  }, [navigation]);
 
   function getLastJobTitle(experiences) {
     // Check if experiences exist and are not empty
@@ -290,8 +192,10 @@ const UserHome = ({navigation}) => {
 
   // Handle error state
   if (error || isError) {
+    handleError(error);
+    handleError(isError);
     console.log(error);
-    return <Text>An error occurred: {error.message}</Text>;
+    // return <Text>An error occurred: {error?.message}</Text>;
   }
 
   // console.log('user', userData);
@@ -326,14 +230,74 @@ const UserHome = ({navigation}) => {
       </ImageBackground>
     );
   };
+
+  const LawyerCardData = ({item}) => {
+    return (
+      <>
+        <TouchableWithoutFeedback
+          onPress={() =>
+            navigation.navigate('AdvocateDetailProfile', {
+              advocateId: item._id,
+            })
+          }>
+          <View style={styles.cardContainerData}>
+            {/* Background Image */}
+            <ImageBackground
+              source={
+                item?.profilePic?.url
+                  ? {uri: item?.profilePic.url}
+                  : {
+                      uri: 'https://t3.ftcdn.net/jpg/02/03/20/66/360_F_203206616_G4fxzVYG6Q19PfoBTGf8tTh83KwRg5Sn.jpg',
+                    }
+              }
+              style={styles.imageBackground}
+              imageStyle={{
+                borderTopLeftRadius: 10,
+                borderTopRightRadius: 10,
+                borderBottomRightRadius: 15,
+                borderBottomLeftRadius: 15,
+              }}>
+              <View style={styles.cardWrapper}>
+                {/* Tilted Background */}
+                <View style={styles.tiltedBackground} />
+
+                {/* Content Section */}
+                <View style={styles.cardContent}>
+                  <View style={styles.starBadge}>
+                    <View style={styles.star}>
+                      <StarRating
+                        rating={item?.rating?.averageRating || 0}
+                        starSize={10}
+                      />
+                    </View>
+                  </View>
+                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.profession}>
+                    {item?.specialization[0]?.name}
+                  </Text>
+                  {item?.location?.city && item?.location?.state && (
+                    <Text style={styles.location}>
+                      {item?.location.city}, {item.location.state}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </ImageBackground>
+          </View>
+        </TouchableWithoutFeedback>
+      </>
+    );
+  };
+
   return (
     <>
-      <StatusBar
-        barStyle="light-content" // Options: 'default', 'light-content', 'dark-content'
-        backgroundColor="#1262D2" // Background color for Android
-      />
+      <StatusBar barStyle="dark-content" backgroundColor="#F3F7FF" />
       <SafeAreaView style={{flex: 1}}>
-        <ScrollView style={styles.container}>
+        <ScrollView
+          style={styles.container}
+          refreshControl={
+            <RefreshControl refreshing={refresh} onRefresh={pullMe} />
+          }>
           {/* Profile Completion Section */}
           <TouchableWithoutFeedback
             onPress={() => navigation.navigate('UserProfile')}>
@@ -384,7 +348,9 @@ const UserHome = ({navigation}) => {
                       source={
                         userDetails?.profilePic?.url
                           ? {uri: userDetails.profilePic.url}
-                          : require('../../../assets/images/user1.png')
+                          : {
+                              uri: 'https://www.shutterstock.com/image-vector/avatar-gender-neutral-silhouette-vector-600nw-2470054311.jpg',
+                            }
                       }
                       style={styles.profileImage}
                     />
@@ -406,12 +372,13 @@ const UserHome = ({navigation}) => {
           <View style={styles.cardContainer}>
             {items.map(item => (
               <LinearGradient
+              key={item.id}
                 colors={['#E4EEFC', '#F3F7FF']}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 0}}
                 style={styles.card}>
                 <TouchableOpacity
-                  key={item.id}
+                
                   style={styles.centerContent}
                   onPress={() =>
                     item.navigateTo
@@ -425,12 +392,13 @@ const UserHome = ({navigation}) => {
             ))}
           </View>
 
-          <View style={{marginVertical: hp('4%')}}>
+          <View style={{marginVertical: hp('1.5%')}}>
             <FlatList
               data={data}
               renderItem={({item}) => (
                 <TouchableOpacity
-                  onPress={() => navigation.navigate('UserReview')}>
+                // onPress={() => navigation.navigate('UserReview')}
+                >
                   <LawyerCard
                     name={item.name}
                     profession={item.profession}
@@ -439,85 +407,23 @@ const UserHome = ({navigation}) => {
                   />
                 </TouchableOpacity>
               )}
-              keyExtractor={item => item.id}
+              keyExtractor={(item) => item.id.toString()}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.flatList}
             />
           </View>
-          {advocateData?.data.map(advocate => {
-            // console.log(advocate);
-            return (
-              <TouchableWithoutFeedback
-                key={advocate._id} // Ensure to use a unique key for each advocate
-                onPress={() =>
-                  navigation.navigate('AdvocateDetailProfile', {
-                    advocateId: advocate._id,
-                  })
-                }>
-                <View style={styles.lawyerDetailContainer}>
-                  <View style={{flexDirection: 'row'}}>
-                    <View style={styles.leftContainer}>
-                      <Image
-                        style={styles.circleImage}
-                        source={
-                          advocate.profilePic?.url
-                            ? {uri: advocate.profilePic.url}
-                            : require('../../../assets/images/avatar.png')
-                        }
-                      />
-                    </View>
-                    <View style={styles.rightContainer}>
-                      <View style={styles.infoContainer}>
-                        <View
-                          style={{
-                            flexDirection: 'row',
-                            justifyContent: 'space-between',
-                            width: wp(65),
-                          }}>
-                          <View style={styles.lawyerDetails}>
-                            <Text style={styles.lawyerName}>
-                              {advocate.name}
-                            </Text>
-                            <Text style={styles.lawyerTitle}>
-                              {advocate?.specialization[0]?.name}
-                            </Text>
-                            {advocate.location?.city &&
-                              advocate.location?.state && (
-                                <View style={styles.locationContainer}>
-                                  <Text style={styles.locationText}>
-                                    {advocate.location.city},{' '}
-                                    {advocate.location.state}
-                                  </Text>
-                                </View>
-                              )}
-                          </View>
+          <View>
+            <FlatList
+              data={advocateData?.data}
+              keyExtractor={item => item._id}
+              renderItem={({item}) => <LawyerCardData item={item} />}
+              contentContainerStyle={styles.listContainer}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            />
+          </View>
 
-                          <View style={styles.starRating}>
-                            <View style={styles.starsContainer}>
-                              {[...Array(5)].map((_, index) => (
-                                <Image
-                                  key={index}
-                                  source={require('../../../assets/images/star.png')}
-                                  style={styles.starImage}
-                                />
-                              ))}
-                            </View>
-                          </View>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                  <View style={styles.aboutContainer}>
-                    <Text style={styles.aboutHeading}>About</Text>
-                    <Text style={styles.aboutText}>
-                      {advocate.headLine || 'No description available.'}.
-                    </Text>
-                  </View>
-                </View>
-              </TouchableWithoutFeedback>
-            );
-          })}
           {/* Recent Consultation */}
           <View style={styles.recentConsultationContainer}>
             <Text style={styles.recentConsultationTitle}>
@@ -527,8 +433,20 @@ const UserHome = ({navigation}) => {
             !slotsData?.data?.some(item =>
               item.slotes.some(slot => slot.status === 'Upcoming'),
             ) ? (
-              // If there is no data or no upcoming slots, show the message
-              <Text style={styles.noCreatedSlotMessage}>No Upcoming Slots</Text>
+              <View
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: wp('100%'),
+              }}>
+              <Image
+                source={require('../../../assets/images/NoResult.png')}
+                style={{width: 150, height: 150}}
+              />
+              <Text style={styles.noCreatedSlotMessage}>
+                No upcoming slot
+              </Text>
+            </View>
             ) : (
               <FlatList
                 horizontal
@@ -549,7 +467,7 @@ const UserHome = ({navigation}) => {
                         <View style={styles.consultationHeader}>
                           <Text
                             style={[styles.consultantName, {color: '#294776'}]}>
-                            {item.advocate.name}
+                            {item?.advocate?.name}
                           </Text>
                           <View
                             style={[
@@ -580,7 +498,7 @@ const UserHome = ({navigation}) => {
                               styles.consultationDate,
                               {color: '#1262D2'},
                             ]}>
-                            {item.date}
+                            {item?.date}
                           </Text>
                         </View>
                         <View
@@ -599,7 +517,7 @@ const UserHome = ({navigation}) => {
                               styles.consultationDate,
                               {color: '#1262D2'},
                             ]}>
-                            {item.time}
+                            {item?.time}
                           </Text>
                         </View>
 
@@ -622,7 +540,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
-    paddingTop: hp('0.2%'),
+    paddingTop: hp('2.5%'),
   },
   banner: {
     paddingVertical: hp('2%'),
@@ -704,7 +622,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: wp('1%'),
-    paddingVertical: hp('1.5%'),
+    paddingVertical: hp('1%'),
     borderWidth: 1,
     borderColor: '#1467DA',
     borderRadius: wp('2%'),
@@ -741,14 +659,14 @@ const styles = StyleSheet.create({
   },
   recentConsultationContainer: {
     marginHorizontal: wp('5%'),
-    marginVertical: hp('1.5%'),
+    marginBottom: hp('4%'),
   },
   recentConsultationTitle: {
     fontSize: wp('3.6%'),
     fontFamily: 'Poppins SemiBold',
     // fontWeight: '600',
     color: '#294776',
-    marginBottom: hp('1%'),
+    // marginBottom: hp('1%'),
   },
   consultationCard: {
     width: wp('70%'),
@@ -811,7 +729,7 @@ const styles = StyleSheet.create({
     padding: wp('3%'),
     marginHorizontal: wp('2%'),
     width: wp('60%'),
-    height: hp('17%'),
+    height: hp('15%'),
   },
   name: {
     fontSize: wp('4%'),
@@ -853,100 +771,9 @@ const styles = StyleSheet.create({
     color: '#FFA000',
     marginLeft: wp('1%'),
   },
-  lawyerDetailContainer: {
-    marginVertical: hp('2%'),
-    borderRadius: wp('1.5%'),
-    backgroundColor: '#E4EEFC',
-    marginHorizontal: wp('5%'),
-    maxHeight: hp('28%'),
-    padding: wp('2.5%'),
-    position: 'relative', // Ensure the card itself is relative for proper alignment
-  },
-  leftContainer: {
-    marginLeft: -25, // Shift left outside the card
-    marginTop: -30, // Shift upward outside the card
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-  },
-  circleImage: {
-    width: wp('19'),
-    height: hp('11%'),
-    borderRadius: wp('4%'),
-    borderWidth: 1,
-    borderColor: '#1262D2',
-  },
-  rightContainer: {
-    //     // flex: 1,
-    justifyContent: 'flex-start',
-    // paddingRight: wp('1%'),
-  },
-
-  infoContainer: {
-    flex: 1,
-    paddingHorizontal: wp('4%'),
-    paddingVertical: hp('1.5%'),
-  },
-  lawyerDetails: {
-    marginBottom: hp('2.5%'),
-  },
-  lawyerName: {
-    fontFamily: 'Poppins SemiBold',
-    fontSize: wp('4%'),
-    color: '#294776',
-    lineHeight: hp('3%'),
-  },
-  lawyerTitle: {
-    color: '#666667',
-    fontFamily: 'Poppins',
-    fontSize: wp('3.2%'),
-    lineHeight: 20,
-    // marginVertical: 5,
-  },
-  starRating: {
-    flexDirection: 'row',
-  },
-  stars: {
-    color: '#FFA800', // Gold color for stars
-    fontSize: wp('6%'),
-    lineHeight: wp('6%'),
-  },
-  locationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    // marginVertical: 5,
-  },
-  locationText: {
-    color: '#294776',
-    fontFamily: 'Poppins',
-    fontWeight: '400',
-    fontSize: wp('3%'),
-  },
-  aboutContainer: {
-    marginTop: hp('5%'),
-    backgroundColor: '#F3F7FF',
-    padding: wp('2.5%'),
-    borderRadius: wp('1.5%'),
-  },
-  aboutHeading: {
-    // fontWeight: 'bold',
-    color: '#294776',
-    marginBottom: hp('0.5%'),
-    fontFamily: 'Poppins SemiBold',
-  },
-  aboutText: {
-    fontSize: wp('3%'),
-    fontWeight: '400',
-    color: '#6B7280',
-    fontFamily: 'Poppins',
-  },
   starsContainer: {
     flexDirection: 'row',
     marginRight: 5, // Adjust as needed
-  },
-  starImage: {
-    width: 18, // Adjust to your image size
-    height: 18, // Adjust to your image size
-    marginRight: 2,
   },
   cardBorder: {
     borderWidth: 1,
@@ -955,10 +782,109 @@ const styles = StyleSheet.create({
   },
   noCreatedSlotMessage: {
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: 14,
     color: '#888', // Or any color of your choice
     marginVertical: 10,
     fontFamily: 'Poppins',
+  },
+  actionContainer: {
+    flexDirection: 'row',
+    // justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+  },
+  actionText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#007bff',
+    fontFamily: 'Poppins',
+  },
+  circleImage1: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  cardContainerData: {
+    width: wp('47%'),
+    height: hp('27%'),
+    // backgroundColor:'yellow',
+    backgroundColor: '#DEEEFF',
+    borderTopLeftRadius: wp('5%'),
+    borderTopRightRadius: wp('5%'),
+    borderBottomLeftRadius: wp('2%'),
+    borderBottomRightRadius: wp('2%'),
+    alignSelf: 'center',
+    marginVertical: hp('2%'),
+    marginRight: wp('4%'),
+    // marginBottom: hp('4%'),
+  },
+  imageBackground: {
+    width: '100%',
+    height: hp('20%'),
+  },
+
+  starBadge: {
+    alignSelf: 'flex-end',
+    marginVertical: 4,
+  },
+  star: {
+    //  backgroundColor:'red',
+    position: 'absolute',
+    top: -10,
+    right: -8,
+    paddingVertical: 2,
+  },
+  cardWrapper: {
+    width: wp('48%'),
+    height: hp('12%'),
+    position: 'relative',
+  },
+  tiltedBackground: {
+    position: 'absolute',
+    top: 100,
+    left: 0,
+    width: '98%',
+    height: '80%',
+    // backgroundColor:'red',
+    backgroundColor: '#DEEEFF',
+    borderTopLeftRadius: wp('6.5%'),
+    borderTopRightRadius: wp('5%'),
+    borderBottomLeftRadius: wp('1.5%'),
+    borderBottomRightRadius: wp('7.5%'),
+    transform: [{rotate: '-8deg'}], // Tilt the background
+  },
+  cardContent: {
+    position: 'absolute',
+    top: 100,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    padding: wp('4%'),
+    justifyContent: 'center',
+    backgroundColor: 'transparent', // Ensure the background remains tilted
+  },
+  name: {
+    marginTop: hp('2%'),
+    color: '#294776',
+    fontFamily: 'Poppins SemiBold',
+    fontSize: hp('2%'),
+  },
+  profession: {
+    color: '#7D7D7D',
+    fontFamily: 'Poppins',
+    fontSize: hp('1.5%'),
+  },
+  location: {
+    color: '#294776',
+    fontFamily: 'Poppins',
+    fontSize: hp('1.5%'),
+  },
+  listContainer: {
+    paddingHorizontal: wp('5%'),
   },
 });
 

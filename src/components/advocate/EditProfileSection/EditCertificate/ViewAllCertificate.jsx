@@ -20,6 +20,7 @@ import {
   useGetCertificateQuery,
 } from '../../../../redux/api/api';
 import CustomDeleteModal from '../../../../../shared/CustomDeleteModal';
+import { handleError } from '../../../../../shared/authUtils';
 
 const ViewAllCertificate = () => {
   const navigation = useNavigation();
@@ -38,10 +39,11 @@ const ViewAllCertificate = () => {
 
   // Handle error state
   if (error) {
-    console.log(error);
+    console.log("viewallcertificate",error);
+    handleError(error);
     // Show the flash message
     showMessage({
-      message: `An error occurred: ${error.message}`,
+      message: `An error occurred: ${error?.message}`,
       type: 'danger',
       titleStyle: {fontFamily: 'Poppins'},
       style: {backgroundColor: 'red'},

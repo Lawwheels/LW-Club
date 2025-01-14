@@ -6,15 +6,19 @@ import {
   FlatList,
   StyleSheet,
   Image,
+  RefreshControl,
   TouchableOpacity,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
+import {showMessage} from 'react-native-flash-message';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {useNavigation} from '@react-navigation/native';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
+import {useGetAllAdvocateQuery, useGetAllUsersQuery, useSendRequestMutation} from '../../redux/api/api';
 import SearchFilter from './SearchFilter';
 
 const commonIssues = [
@@ -23,49 +27,6 @@ const commonIssues = [
   {id: '3', title: 'Divorce and Family Law', icon: 'family-restroom'},
   {id: '4', title: 'Contract Disputes', icon: 'gavel'},
   {id: '5', title: 'Property Disputes', icon: 'home'},
-];
-
-const lawyers = [
-  {
-    id: '1',
-    name: 'Kajal Gupta',
-    profession: 'Civil Lawyer',
-    experience: '5+ Years of Experience',
-    isVerified: true,
-    location: 'Delhi',
-    avatar:
-      'https://images.unsplash.com/photo-1719937206589-d13b6b008196?q=80&w=2700&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  },
-  {
-    id: '2',
-    name: 'Ankush Gupta',
-    profession: 'Property Disputes',
-    experience: '5+ Years of Experience',
-    location: 'Noida',
-    isVerified: true,
-    avatar:
-      'https://images.unsplash.com/photo-1719937206589-d13b6b008196?q=80&w=2700&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  },
-  {
-    id: '3',
-    name: 'Amit Gupta',
-    profession: 'Civil Lawyer',
-    experience: '5+ Years of Experience',
-    location: 'Delhi',
-    isVerified: true,
-    avatar:
-      'https://images.unsplash.com/photo-1719937206589-d13b6b008196?q=80&w=2700&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  },
-  {
-    id: '4',
-    name: 'Prakhar Kulshrestha',
-    profession: 'Property Disputes',
-    experience: '5+ Years of Experience',
-    location: 'Noida',
-    isVerified: true,
-    avatar:
-      'https://images.unsplash.com/photo-1719937206589-d13b6b008196?q=80&w=2700&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  },
 ];
 
 // Search bar component
@@ -150,51 +111,160 @@ const CommonIssues = () => {
 };
 
 // Recent Lawyers section
-const RecentLawyers = ({searchQuery}) => {
+const RecentLawyers = ({lawyersData, searchQuery, sendRequest, navigation}) => {
+  const lawyers = lawyersData?.data || [];
+
   const filteredLawyers = searchQuery
-    ? lawyers.filter(
-        lawyer =>
-          lawyer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          lawyer.profession.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : lawyers;
+    ? lawyers
+        .filter(
+          lawyer =>
+            lawyer.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+            lawyer?.connection?.status !== 'accepted', // Exclude "accepted" status
+        )
+        .slice(0, 4) // Limit to the first 4 lawyers
+    : lawyers
+        .filter(lawyer => lawyer?.connection?.status !== 'accepted') // Exclude "accepted" status
+        .slice(0, 4); // Limit to the first 4 lawyers
+
+  const handleConnect = async userId => {
+    try {
+      const res = await sendRequest({userId: userId}).unwrap();
+      console.log(res);
+      if (res && res?.success) {
+        showMessage({
+          message: 'Success',
+          description: res?.message,
+          type: 'success',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
+        navigation.navigate('UserNavigator');
+      } else {
+        const errorMsg = res.error?.data?.message || 'Something went wrong!';
+        showMessage({
+          message: 'Error',
+          description: errorMsg,
+          type: 'danger',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send connection request: ', error);
+      const errorMsg =
+        error?.data?.message ||
+        error?.response?.data?.error?.data?.message ||
+        'Something went wrong!';
+      showMessage({
+        message: 'Error',
+        description: errorMsg,
+        type: 'danger',
+        titleStyle: {fontFamily: 'Poppins SemiBold'},
+        textStyle: {fontFamily: 'Poppins'},
+      });
+    } finally {
+    }
+  };
   return (
     <View style={{marginTop: hp('3%')}}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Recent</Text>
-        <TouchableOpacity>
+        {lawyers?.length === 0 && (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('SearchAllAdvocateList')}>
           <Text style={styles.viewAll}>View All</Text>
-        </TouchableOpacity>
+        </TouchableOpacity>)}
       </View>
       <View style={{marginHorizontal: wp('5%')}}>
+      {filteredLawyers.length === 0 ? (
+          <View style={styles.noDataContainer}>
+            <Image
+              source={{uri:'https://cdni.iconscout.com/illustration/premium/thumb/no-data-found-illustration-download-in-svg-png-gif-file-formats--missing-error-business-pack-illustrations-8019228.png?f=webp'}} // Replace with the path to your image
+              style={styles.noDataImage}
+            />
+            <Text style={styles.noDataText}>No Lawyers Found</Text>
+          </View>
+        ) : (
         <FlatList
           data={filteredLawyers}
           numColumns={2}
-          renderItem={({item}) => (
-            <View style={styles.lawyerCard}>
-              <View style={styles.avatarContainer}>
-                <Image source={{uri: item.avatar}} style={styles.avatar} />
-                {item.isVerified && (
+          renderItem={({item, index}) => {
+            const isPending = item?.connection?.status === 'pending';
+            const isLastCard =
+              filteredLawyers?.length % 2 !== 0 &&
+              index === filteredLawyers?.length - 1;
+            // console.log(item.specialization[0].name);
+            return (
+              <TouchableOpacity
+                style={[
+                  styles.lawyerCard,
+                  isLastCard && {flex: 0.45}, // Adjust width for the last card if odd
+                ]}
+                onPress={() =>
+                  navigation.navigate('AdvocateDetailProfile', {
+                    advocateId: item._id,
+                  })
+                }>
+                <View style={styles.avatarContainer}>
                   <Image
-                    source={require('../../../assets/images/verifyIcon.png')}
-                    style={styles.verifyIcon}
+                    source={{
+                      uri:
+                        item?.profilePic?.url ||
+                        'https://www.shutterstock.com/image-vector/avatar-gender-neutral-silhouette-vector-600nw-2470054311.jpg',
+                    }}
+                    style={styles.avatar}
                   />
-                )}
-              </View>
-              <Text style={styles.lawyerName}>{item.name}</Text>
-              <Text style={styles.lawyerProfession}>{item.profession}</Text>
-              <Text style={styles.lawyerExperience}>{item.experience}</Text>
-              <Text style={styles.lawyerLocation}>
-                <Image
-                  source={require('../../../assets/images/icons/locationIcon.png')}
-                  style={{width: 18, height: 18, marginRight: 10}}
-                />
-                {item.location}
-              </Text>
-            </View>
-          )}
-          keyExtractor={item => item.id}
-        />
+                  {/* {item.isVerified && (
+                    <Image
+                      source={require('../../../assets/images/verifyIcon.png')}
+                      style={styles.verifyIcon}
+                    />
+                  )} */}
+                </View>
+                <Text style={styles.lawyerName}>{item?.name}</Text>
+                <Text style={styles.lawyerExperience}>
+                  {/* {item.experience_year} */}
+                  {item?.specialization[0]?.name}
+                </Text>
+
+                {/* {item.location && (
+                  <Text style={styles.lawyerLocation}>
+                    <Image
+                      source={require('../../../../assets/images/icons/locationIcon.png')}
+                      style={{width: 18, height: 18, marginRight: 10}}
+                    />
+                    {`${item.location.city} ${item.location.state}, ${item.location.country}`}
+                  </Text>
+                )} */}
+
+                {/* {item.connection === null ? (
+                  <TouchableOpacity
+                    style={styles.connectButton}
+                    onPress={() => handleConnect(item._id)}>
+                    <Text style={styles.connectButtonText}>Connect</Text>
+                  </TouchableOpacity>
+                ) : null}
+                {isPending && (
+                  <View style={[styles.pendingButton, {flexDirection: 'row'}]}>
+                    <Image
+                      source={require('../../../assets/images/clock.png')}
+                      style={{width: 18, height: 18, marginRight: 10}}
+                    />
+                    <Text
+                      style={{
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        color: '#8e8e8e',
+                      }}>
+                      Pending
+                    </Text>
+                  </View>
+                )} */}
+              </TouchableOpacity>
+            );
+          }}
+          keyExtractor={item => item._id}
+        />)}
       </View>
     </View>
   );
@@ -202,10 +272,20 @@ const RecentLawyers = ({searchQuery}) => {
 
 // Main Component
 const Search = () => {
+  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [filters, setFilters] = useState({}); // To hold the applied filters
+  const [refresh, setRefresh] = useState(false);
 
+  const {data, isLoading, isError, refetch} = useGetAllAdvocateQuery({
+    role: 'Advocate',
+    search: '',
+    page: 1,
+    resultPerPage: 20,
+  });
+ 
+  const [sendRequest] = useSendRequestMutation();
   // Function to open the filter modal
   const openFilterModal = () => setFilterModalVisible(true);
 
@@ -217,6 +297,32 @@ const Search = () => {
     setFilters(newFilters);
     console.log('Filters applied:', newFilters);
   };
+
+  const pullMe = async () => {
+    try {
+      setRefresh(true);
+      await Promise.all([refetch()]);
+    } catch (error) {
+      console.error('Error during refetch:', error); // Handle errors if needed
+    } finally {
+      setRefresh(false); // Hide the refresh indicator after both data are fetched
+    }
+  };
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Failed to fetch user requests.</Text>
+      </View>
+    );
+  }
   return (
     <SafeAreaView style={{flex: 1}}>
       <View style={styles.container}>
@@ -227,9 +333,17 @@ const Search = () => {
         />
         <KeyboardAwareScrollView
           style={{flex: 1}}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refresh} onRefresh={pullMe} />
+          }>
           <CommonIssues />
-          <RecentLawyers searchQuery={searchQuery} />
+          <RecentLawyers
+            searchQuery={searchQuery}
+            lawyersData={data}
+            sendRequest={sendRequest}
+            navigation={navigation}
+          />
         </KeyboardAwareScrollView>
         <SearchFilter
           visible={filterModalVisible}
@@ -245,6 +359,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
+    paddingTop: wp('5%'),
   },
   searchContainer: {
     flexDirection: 'row',
@@ -352,6 +467,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     fontSize: wp('3%'),
     color: '#1262D2',
+    textAlign: 'center',
   },
   lawyerLocation: {
     flexDirection: 'row',
@@ -360,6 +476,43 @@ const styles = StyleSheet.create({
     fontSize: wp('3%'),
     color: '#1262D2',
     lineHeight: 20,
+  },
+  connectButton: {
+    marginTop: 10,
+    backgroundColor: '#007BFF', // Button color
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  connectButtonText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontFamily: 'Poppins',
+  },
+  pendingButton: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#8e8e8e',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  noDataContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 200,
+  },
+  noDataImage: {
+    width: 150,
+    height: 150,
+    marginBottom: 10,
+  },
+  noDataText: {
+    fontFamily: 'Poppins SemiBold',
+    fontSize: 16,
+    color: '#8e8e8e',
   },
 });
 

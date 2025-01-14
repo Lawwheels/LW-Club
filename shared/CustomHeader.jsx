@@ -15,15 +15,24 @@ const CustomHeader = ({ title, icon }) => {
 
   return (
     <SafeAreaView>
-    <View style={styles.header}>
-      <TouchableOpacity onPress={handleGoBack} style={{marginTop:hp('1.6%')}}>
-        <Image source={icon} style={styles.back} />
-      </TouchableOpacity>
+      <View style={styles.header}>
+        {/* Left Section: Back Button */}
+        {icon ? (
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButtonContainer}>
+            <Image source={icon} style={styles.back} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.placeholder} /> // Placeholder to maintain layout consistency
+        )}
 
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>{title}</Text>
+        {/* Center Section: Title */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{title}</Text>
+        </View>
+
+        {/* Right Section: Invisible View to balance layout */}
+        <View style={styles.placeholder} />
       </View>
-    </View>
     </SafeAreaView>
   );
 };
@@ -32,27 +41,32 @@ export default CustomHeader;
 
 const styles = StyleSheet.create({
   header: {
-    height: hp(9),
+    height: hp(6),
     flexDirection: "row",
-    justifyContent:'space-between',
+    alignItems: "center",
     backgroundColor: "#F3F7FF",
-    // backgroundColor:'red',
     elevation: 0.1,
-    paddingHorizontal: wp('2.5%'),  
-    paddingVertical: hp('0.5%'),   
+    paddingHorizontal: wp("2.5%"),
+  },
+  backButtonContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: 40, 
   },
   back: {
-    width: wp('6%'),
-    height: hp('4%'),
+    width: 24,
+    height: 24,
   },
   titleContainer: {
-    flex: 1, // Let the title take up the remaining space
+    flex: 1, 
     justifyContent: "center",
     alignItems: "center",
   },
+  placeholder: {
+    width: 40, 
+  },
   title: {
-    fontSize: wp('4.5%'),
-    // fontWeight: "600",
+    fontSize: wp("4.5%"),
     fontFamily: "Poppins SemiBold",
   },
 });

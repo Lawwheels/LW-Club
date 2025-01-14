@@ -21,6 +21,7 @@ import {
   useGetPracticeAreaByIdQuery,
 } from '../../../../redux/api/api';
 import {useNavigation} from '@react-navigation/native';
+import { handleError } from '../../../../../shared/authUtils';
 
 const EditPracticeArea = ({route}) => {
   const {id} = route?.params || {};
@@ -42,10 +43,11 @@ const EditPracticeArea = ({route}) => {
 
   // Handle error state
   if (error) {
+    handleError(error);
     console.log(error);
     // Show the flash message
     showMessage({
-      message: `An error occurred: ${error.message}`,
+      message: `An error occurred: ${error?.message}`,
       type: 'danger',
       titleStyle: {fontFamily: 'Poppins'},
       style: {backgroundColor: 'red'},

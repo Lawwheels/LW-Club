@@ -20,6 +20,7 @@ import {
   useGetAdvocateQuery,
 } from '../../../../redux/api/api';
 import CustomDeleteModal from '../../../../../shared/CustomDeleteModal';
+import { handleError } from '../../../../../shared/authUtils';
 
 const ViewAllEducation = () => {
   const navigation = useNavigation();
@@ -38,10 +39,10 @@ const ViewAllEducation = () => {
 
   // Handle error state
   if (error) {
-    console.log(error);
-    // Show the flash message
+    console.log("viewalleducartion",error);
+    handleError(error);
     showMessage({
-      message: `An error occurred: ${error.message}`,
+      message: `An error occurred: ${error?.message}`,
       type: 'danger',
       titleStyle: {fontFamily: 'Poppins'},
       style: {backgroundColor: 'red'},

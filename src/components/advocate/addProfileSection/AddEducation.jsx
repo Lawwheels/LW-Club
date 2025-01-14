@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,15 @@ import {
   TextInput,
   Switch,
 } from 'react-native';
-import {Formik, FieldArray} from 'formik';
+import {Formik} from 'formik';
 import {showMessage} from 'react-native-flash-message';
 import * as Yup from 'yup';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
-import {Button} from 'react-native-elements';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import {SelectList} from 'react-native-dropdown-select-list';
 import CustomHeader from '../../../../shared/CustomHeader';
 import CustomButton from '../../../../shared/CustomButton';
 import {useAdvocateEducationMutation} from '../../../redux/api/api';
@@ -26,7 +24,7 @@ const educationValidationSchema = Yup.object().shape({
   school_university: Yup.string().required('School / University is required'),
   fieldOfStudy: Yup.string().required('Study field is required'),
   degreeType: Yup.string().required('Degree type is required'),
-  activities: Yup.string().required('Activities is required'),
+  // activities: Yup.string().required('Activities is required'),
   startDate: Yup.date().nullable().required('Start date is required'),
   endDate: Yup.date().nullable(),
 });
@@ -39,16 +37,6 @@ export default AddEducation = ({navigation}) => {
   const [endDate, setEndDate] = useState(null);
 
   const [advocateEducation] = useAdvocateEducationMutation();
-
-  const profileVisible = [
-    {key: '1', value: 'True'},
-    {key: '2', value: 'False'},
-  ];
-
-  const booleanMapping = {
-    True: true,
-    False: false,
-  };
 
   return (
     <>
@@ -72,10 +60,28 @@ export default AddEducation = ({navigation}) => {
             isRecent: false,
             isOngoing: false,
           }}
-          // validationSchema={validationExperience}
           validationSchema={educationValidationSchema}
           onSubmit={async (values, {setSubmitting}) => {
             try {
+              setSubmitting(true); // Set submitting to true at the start
+
+              // Check if startDate is before endDate
+              if (!values.isOngoing && values.endDate) {
+                const startDate = new Date(values.startDate);
+                const endDate = new Date(values.endDate);
+
+                if (startDate > endDate) {
+                  showMessage({
+                    message: 'Validation Error',
+                    description: 'End date must be after the start date.',
+                    type: 'danger',
+                    titleStyle: {fontFamily: 'Poppins SemiBold'},
+                    textStyle: {fontFamily: 'Poppins'},
+                  });
+                  setSubmitting(false); // Reset submitting state
+                  return; // Exit the function
+                }
+              }
               const experienceToSubmit = {
                 school_university: values.school_university,
                 startDate: values.startDate,
@@ -161,12 +167,15 @@ export default AddEducation = ({navigation}) => {
               <View>
                 <View style={styles.experienceItem}>
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>School / University</Text>
+                    <Text style={styles.inputLabel}>
+                      School / University<Text style={{color: 'red'}}> *</Text>
+                    </Text>
 
                     <TextInput
                       placeholder="Ex: Boston University"
                       style={styles.input}
                       value={values.school_university}
+                      onBlur={() => handleBlur('school_university')}
                       onChangeText={value =>
                         setFieldValue(`school_university`, value)
                       }
@@ -178,12 +187,15 @@ export default AddEducation = ({navigation}) => {
                     )}
                   </View>
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Degree</Text>
+                    <Text style={styles.inputLabel}>
+                      Degree<Text style={{color: 'red'}}> *</Text>
+                    </Text>
 
                     <TextInput
                       placeholder="Ex: Bachelor's"
                       style={styles.input}
                       value={values.degreeType}
+                      onBlur={() => handleBlur('degreeType')}
                       onChangeText={value => setFieldValue(`degreeType`, value)}
                     />
                     {touched.degreeType && errors.degreeType && (
@@ -191,12 +203,15 @@ export default AddEducation = ({navigation}) => {
                     )}
                   </View>
                   <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Study Field</Text>
+                    <Text style={styles.inputLabel}>
+                      Study Field<Text style={{color: 'red'}}> *</Text>
+                    </Text>
 
                     <TextInput
                       placeholder="Ex:Business"
                       style={styles.input}
                       value={values.fieldOfStudy}
+                      onBlur={() => handleBlur('fieldOfStudy')}
                       onChangeText={value =>
                         setFieldValue(`fieldOfStudy`, value)
                       }
@@ -215,6 +230,7 @@ export default AddEducation = ({navigation}) => {
                       placeholder="Ex: Grade A, Excellent performance"
                       style={styles.input}
                       value={values.grade}
+                      onBlur={() => handleBlur('grade')}
                       onChangeText={value => setFieldValue(`grade`, value)}
                     />
                   </View>
@@ -231,6 +247,7 @@ export default AddEducation = ({navigation}) => {
                       }}
                       multiline={true}
                       numberOfLines={4}
+                      onBlur={() => handleBlur('description')}
                       value={values.description}
                       textAlignVertical="top"
                       onChangeText={value =>
@@ -239,13 +256,47 @@ export default AddEducation = ({navigation}) => {
                     />
                   </View>
                   <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Ongoing</Text>
+                    <View style={styles.switchContainer}>
+                      <Text style={styles.switchText}>
+                        {values.isOngoing ? 'Yes' : 'No'}
+                      </Text>
+                      <Switch
+                        trackColor={{false: '#767577', true: '#1262D2'}}
+                        thumbColor={values.isOngoing ? '#fff' : '#f4f3f4'}
+                        onValueChange={value =>
+                          setFieldValue('isOngoing', value)
+                        }
+                        value={values.isOngoing}
+                      />
+                    </View>
+                  </View>
+                   <View style={styles.inputContainer}>
+                    <Text style={styles.inputLabel}>Recent</Text>
+                    <View style={styles.switchContainer}>
+                      <Text style={styles.switchText}>
+                        {values.isRecent ? 'Yes' : 'No'}
+                      </Text>
+                      <Switch
+                        trackColor={{false: '#767577', true: '#1262D2'}}
+                        thumbColor={values.isRecent ? '#fff' : '#f4f3f4'}
+                        onValueChange={value =>
+                          setFieldValue('isRecent', value)
+                        }
+                        value={values.isRecent}
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.inputContainer}>
                     <View
                       style={{
                         flexDirection: 'row',
                         justifyContent: 'space-between',
                       }}>
                       <View>
-                        <Text style={styles.inputLabel}>Start Date</Text>
+                        <Text style={styles.inputLabel}>
+                          Start Date<Text style={{color: 'red'}}> *</Text>
+                        </Text>
                         <TouchableOpacity
                           style={styles.customButton}
                           onPress={() => setDatePickerVisible(true)}>
@@ -304,8 +355,27 @@ export default AddEducation = ({navigation}) => {
                           )}
                         </TouchableOpacity>
 
+                        {/* {endDatePickerVisible &&
+                          !values.isOngoing && ( // Show date picker only if ongoing is false
+                            <DateTimePicker
+                              value={endDate || new Date()}
+                              mode="date"
+                              display="default"
+                              onChange={(event, selectedDate) => {
+                                if (event.type === 'set') {
+                                  const formattedDate = selectedDate
+                                    .toISOString()
+                                    .split('T')[0];
+                                  setFieldValue('endDate', formattedDate); // Set end date
+                                  setEndDate(selectedDate); // Update state
+                                }
+                                setEndDatePickerVisible(false); // Hide picker after date is selected
+                              }}
+                            />
+                          )} */}
+
                         {endDatePickerVisible &&
-                          !isOngoing && ( // Show date picker only if ongoing is false
+                          !values.isOngoing && ( // Show date picker only if ongoing is false
                             <DateTimePicker
                               value={endDate || new Date()}
                               mode="date"
@@ -340,44 +410,12 @@ export default AddEducation = ({navigation}) => {
                       numberOfLines={4}
                       value={values.activities}
                       textAlignVertical="top"
+                      onBlur={() => handleBlur('activities')}
                       onChangeText={value => setFieldValue(`activities`, value)}
                     />
-                    {touched.activities && errors.activities && (
-                      <Text style={styles.errorText}>{errors.activities}</Text>
-                    )}
                   </View>
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Ongoing</Text>
-                    <View style={styles.switchContainer}>
-                      <Text style={styles.switchText}>
-                        {values.isOngoing ? 'Yes' : 'No'}
-                      </Text>
-                      <Switch
-                        trackColor={{false: '#767577', true: '#1262D2'}}
-                        thumbColor={values.isOngoing ? '#fff' : '#f4f3f4'}
-                        onValueChange={value =>
-                          setFieldValue('isOngoing', value)
-                        }
-                        value={values.isOngoing}
-                      />
-                    </View>
-                  </View>
-                  <View style={styles.inputContainer}>
-                    <Text style={styles.inputLabel}>Recent</Text>
-                    <View style={styles.switchContainer}>
-                      <Text style={styles.switchText}>
-                        {values.isRecent ? 'Yes' : 'No'}
-                      </Text>
-                      <Switch
-                        trackColor={{false: '#767577', true: '#1262D2'}}
-                        thumbColor={values.isRecent ? '#fff' : '#f4f3f4'}
-                        onValueChange={value =>
-                          setFieldValue('isRecent', value)
-                        }
-                        value={values.isRecent}
-                      />
-                    </View>
-                  </View>
+                 
+                 
                 </View>
 
                 <CustomButton

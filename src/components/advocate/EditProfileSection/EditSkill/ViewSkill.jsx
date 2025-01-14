@@ -21,6 +21,7 @@ import {
   useGetAdvocateQuery,
 } from '../../../../redux/api/api';
 import CustomDeleteModal from '../../../../../shared/CustomDeleteModal';
+import { handleError } from '../../../../../shared/authUtils';
 
 const ViewSkill = () => {
   const navigation = useNavigation();
@@ -39,10 +40,10 @@ const ViewSkill = () => {
   console.log(data.data[0].userSkills);
   // Handle error state
   if (error) {
-    console.log(error);
-    // Show the flash message
+    console.log("viewskill",error);
+    handleError(error);
     showMessage({
-      message: `An error occurred: ${error.message}`,
+      message: `An error occurred: ${error?.message}`,
       type: 'danger',
       titleStyle: {fontFamily: 'Poppins'},
       style: {backgroundColor: 'red'},

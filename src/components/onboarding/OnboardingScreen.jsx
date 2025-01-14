@@ -68,7 +68,11 @@ export default function OnBoardingScreen({navigation}) {
           bottomBarHighlight={false}
           DoneButtonComponent={doneButton}
           NextButtonComponent={doneButton}
-          SkipButtonComponent={() => null} // Hide Skip button
+          SkipButtonComponent={() => (
+            <TouchableOpacity onPress={handleDone} style={styles.skipButton}>
+              <Text style={styles.skipButtonText}>Skip</Text>
+            </TouchableOpacity>
+          )}
           showPagination
           DotComponent={Dots} // Custom Dot Component
           bottomBarHeight={70} // Control bottom bar height
@@ -185,16 +189,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
   },
   nextButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 30,
+    paddingVertical: hp('1.5%'),
+    paddingHorizontal: wp('6%'),
     marginHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: wp(2),
   },
   buttonText: {
+    fontSize:wp('4%'),
     color: '#fff',
-    fontSize: hp(2),
-    fontWeight: 'bold',
-    fontFamily: 'Poppins',
+    fontFamily: 'Poppins SemiBold',
   },
   dot: {
     width: 8,
@@ -210,5 +213,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row', // Align dots in a row
     justifyContent: 'flex-start', // Align dots to the left
     zIndex: 100,
+  },
+  skipButton: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skipButtonText: {
+    fontSize: wp('4%'),
+    color: '#125ECA',
+    fontFamily:'Poppins'
   },
 });

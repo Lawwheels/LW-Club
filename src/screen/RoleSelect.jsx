@@ -212,6 +212,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     height: '74%',
     maxHeight: '74%',
+    // height:'50%',
+    // maxHeight:'50%',
     // height: screenHeight * 0.49,
     bottom: 0, // To adjust position from bottom
   },
@@ -241,7 +243,7 @@ const styles = StyleSheet.create({
   },
   radioButtonInner: {
     height: hp('1.8%'),
-    width: wp('3%'),
+    width: wp('3.5%'),
     borderRadius: wp('2%'),
     backgroundColor: '#E1EBFF',
   },

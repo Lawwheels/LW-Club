@@ -17,15 +17,18 @@ import {
   useGiveAdvocateReviewMutation,
 } from '../../redux/api/api';
 import CustomHeader from '../../../shared/CustomHeader';
+import { useNavigation } from '@react-navigation/native';
+import { handleError } from '../../../shared/authUtils';
 
 const FeedbackForm = ({route}) => {
+  const navigation=useNavigation();
   const {id} = route.params || {};
   const [loading, setLoading] = useState(false);
 
   const {data, isLoading, error} = useGetUserAdvocateByIdQuery(id);
   const [giveAdvocateReview] = useGiveAdvocateReviewMutation();
 
-  const advocateDetails = data?.data[0];
+  const advocateDetails = data?.data;
   // console.log(advocateDetails);
 
   if (isLoading) {
@@ -39,13 +42,10 @@ const FeedbackForm = ({route}) => {
   // Handle error state
   if (error) {
     console.log(error);
-    return <Text>An error occurred: {error.message}</Text>;
+    handleError(error);
+    return <Text>An error occurred: {error?.message}</Text>;
   }
-  const handleRating = star => {
-    // Toggle the star: if clicked on the current rating, reset it; otherwise, set the new rating
-    setRating(prevRating => (prevRating === star ? 0 : star));
-  };
-  // console.log('feedback', rating);
+
   const validationSchema = Yup.object().shape({
     rating: Yup.number()
       .min(1, 'Please select at least one star')
@@ -76,8 +76,11 @@ const FeedbackForm = ({route}) => {
           message: 'Success',
           description: response?.data?.message,
           type: 'success',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
         });
         resetForm();
+        navigation.navigate("UserNavigator");
       } else {
         const errorMsg =
           response.error?.data?.message || 'Something went wrong!';
@@ -85,14 +88,20 @@ const FeedbackForm = ({route}) => {
           message: 'Error',
           description: errorMsg,
           type: 'danger',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
         });
       }
     } catch (error) {
       console.error('Error submitting feedback:', error);
+      const errorMsg =
+      error?.response?.data?.error?.data?.message || 'Something went wrong!';
       showMessage({
         message: 'Error',
-        description: 'Something went wrong!',
+        description:errorMsg,
         type: 'danger',
+        titleStyle: {fontFamily: 'Poppins SemiBold'},
+        textStyle: {fontFamily: 'Poppins'},
       });
     } finally {
       setLoading(false);
@@ -119,7 +128,7 @@ const FeedbackForm = ({route}) => {
             {/* Image */}
             <Image
               source={
-                advocateDetails.profilePic?.url
+                advocateDetails?.profilePic?.url
                   ? {uri: advocateDetails.profilePic.url}
                   : require('../../../assets/images/avatar.png')
               }
@@ -140,83 +149,7 @@ const FeedbackForm = ({route}) => {
           </Text>
         </View>
 
-        {/* <View style={styles.starsContainer}>
-          {[1, 2, 3, 4, 5].map(star => (
-            <TouchableOpacity
-              key={star}
-              style={{marginHorizontal: 6}}
-              onPress={() => handleRating(star)}>
-              {star > rating ? (
-                <Image
-                  source={require('../../../assets/images/icons/Vector.png')}
-                  style={{width: 24, height: 24}}
-                />
-              ) : (
-                <Image
-                  source={require('../../../assets/images/icons/activeStar.png')}
-                  style={{width: 24, height: 24}}
-                />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.commentContainer}>
-          <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-            <Text style={styles.commentLabel}>Write a comment</Text>
-            <Text style={styles.maxWords}>Max 600 Words</Text>
-          </View>
-
-          <TextInput
-            style={styles.commentInput}
-            placeholder="Type here..."
-            multiline
-            numberOfLines={4}
-            maxLength={600}
-            value={comment}
-            onChangeText={text => setComment(text)}
-          />
-        </View> */}
-
-        {/* <View style={styles.recommendationContainer}>
-          <Text style={styles.recommendationText}>
-            Would you recommend{' '}
-            <Text style={styles.userName}>Mr. Ankush Gupta</Text> to your
-            friends?
-          </Text>
-          <View style={styles.radioButtons}>
-            <TouchableOpacity
-              onPress={() => setRecommendation('Yes')}
-              style={styles.radioOption}>
-              <View style={styles.radioCircle}>
-                {recommendation === 'Yes' && (
-                  <View style={styles.selectedCircle} />
-                )}
-              </View>
-              <Text style={styles.radioLabel}>Yes</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setRecommendation('No')}
-              style={styles.radioOption}>
-              <View style={styles.radioCircle}>
-                {recommendation === 'No' && (
-                  <View style={styles.selectedCircle} />
-                )}
-              </View>
-              <Text style={styles.radioLabel}>No</Text>
-            </TouchableOpacity>
-          </View>
-        </View> */}
-        {/* <LinearGradient
-          colors={['#1262D2', '#17316D']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 0}}
-          style={styles.submitButton}>
-          <TouchableOpacity onPress={handleSubmit}>
-            <Text style={styles.submitButtonText}>Submit your Feedback</Text>
-          </TouchableOpacity>
-        </LinearGradient> */}
+     
         <Formik
           initialValues={{rating: 0, comment: ''}}
           validationSchema={validationSchema}

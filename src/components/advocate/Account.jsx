@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useState} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
+  Modal,
+  Pressable,
   ToastAndroid,
   ActivityIndicator,
 } from 'react-native';
@@ -16,20 +18,23 @@ import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import {useNavigation, CommonActions} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import CustomHeader from '../../../shared/CustomHeader';
-import navigationStrings from '../../constants/navigationStrings';
-import {clearUser} from '../../redux/reducers/auth/authSlice';
+// import navigationStrings from '../../constants/navigationStrings';
+// import {clearUser} from '../../redux/reducers/auth/authSlice';
 import {useGetAdvocateQuery} from '../../redux/api/api';
+import {logoutUser} from '../../redux/reducers/auth/authSlice';
+import { CommonActions } from '@react-navigation/native';
+import { handleError } from '../../../shared/authUtils';
 
 const Account = () => {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const [modalVisible, setModalVisible] = useState(false);
 
   const {data, error, isLoading} = useGetAdvocateQuery();
-  console.log(data);
-  console.log(error);
+
 
   function getLastJobTitle(userData) {
     // Check if experiences exist and are not empty
@@ -59,6 +64,7 @@ const Account = () => {
 
   // Handle error state
   if (error) {
+    handleError(error);
     console.log(error);
     // Show the flash message
     showMessage({
@@ -76,30 +82,20 @@ const Account = () => {
         }}>{`An error Occured ${error?.error}`}</Text>
     );
   }
-  const handleLogout = async () => {
-    try {
-      // Remove authToken from AsyncStorage
-      await AsyncStorage.removeItem('authToken');
-      // Show a toast notification for feedback
-      ToastAndroid.show(
-        'You have successfully logged out!',
-        ToastAndroid.SHORT,
-      );
 
-      // Reset navigation stack and navigate to Login screen
-      navigation.navigate('Login');
-    } catch (error) {
-      console.error('Error logging out: ', error);
-      showMessage({
-        message: 'Logout failed. Please try again.',
-        type: 'danger',
-        titleStyle: {fontFamily: 'Poppins'},
-        style: {backgroundColor: 'red'},
-      });
-    }
-  };
+
+const handleLogout = async () => {
+  setModalVisible(false);
+    await dispatch(logoutUser()); // Clear auth state
+    navigation.dispatch(
+        CommonActions.reset({
+            index: 0,
+            routes: [{ name: "authStack" }],
+        })
+    );
+};
   return (
-    <>
+    <View style={{paddingTop: hp('4.5%'), flex: 1, backgroundColor: '#F3F7FF'}}>
       <CustomHeader
         title={'My Account'}
         icon={require('../../../assets/images/back.png')}
@@ -166,7 +162,9 @@ const Account = () => {
             ]}>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={handleLogout}>
+              onPress={() => setModalVisible(true)}
+              // onPress={handleLogout}
+              >
               <Image
                 source={require('../../../assets/images/icons/logout.png')} // Path to the profile image
                 style={{width: 24, height: 24}}
@@ -310,15 +308,42 @@ const Account = () => {
           </View>
         </View>
       </ScrollView>
-    </>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirm Logout</Text>
+            <Text style={styles.modalMessage}>Are you sure you want to log out?</Text>
+
+            <View style={styles.buttonContainer}>
+              <Pressable
+                style={[styles.button, styles.cancelButton]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.button, styles.confirmButton]}
+                onPress={handleLogout}
+              >
+                <Text style={styles.buttonText}>Logout</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#F3F7FF',
     paddingHorizontal: wp('4%'),
+    // paddingVertical:hp('3.5%')
   },
   header: {
     flexDirection: 'row',
@@ -337,7 +362,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: hp('3.5%'),
+    marginBottom: hp('1.5%'),
   },
   profileDetails: {
     flexDirection: 'row',
@@ -380,17 +405,23 @@ const styles = StyleSheet.create({
   },
   actionsRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: hp('1.5%'),
+    width: '100%',
+  },
+  cardContainer: {
+    width: '48%',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    elevation: 2,
+    backgroundColor: '#F3F7FF',
+    borderRadius: 5,
   },
   actionButton: {
     alignItems: 'center',
-    // justifyContent: 'center',
     padding: wp('2%'),
-    // flex: 1,
     marginHorizontal: wp('1%'),
-    // elevation: 2,
   },
   actionText: {
     marginTop: hp('1.2%'),
@@ -425,8 +456,8 @@ const styles = StyleSheet.create({
   },
   menuText1: {
     flex: 1,
-    marginLeft: 11,
-    fontSize: 14,
+    marginLeft: wp('3%'),
+    fontSize: wp('3.5%'),
     fontFamily: 'Poppins',
     fontWeight: '400',
     color: '#294776',
@@ -446,16 +477,51 @@ const styles = StyleSheet.create({
     width: 27,
     height: hp('3.6%'),
   },
-  cardContainer: {
-    backgroundColor: '#FFFFFF',
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: 'white',
     borderRadius: 10,
-    // padding: wp('2%'),
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-    marginHorizontal: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: hp('2%'),
+    fontFamily:'Poppins SemiBold',
+    marginBottom: hp('1%'),
+  },
+  modalMessage: {
+    fontSize: hp('1.8%'),
+    textAlign: 'center',
+    fontFamily:'Poppins',
+    marginBottom: 20,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  button: {
+    flex: 1,
+    padding: 10,
+    marginHorizontal: 5,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: '#ccc',
+  },
+  confirmButton: {
+    backgroundColor: '#f00',
+  },
+  buttonText: {
+    color: 'white',
+    fontFamily:'Poppins SemiBold'
   },
 });
 

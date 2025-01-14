@@ -1,4 +1,4 @@
-package com.lawwheelsclub
+package law.wheels.club
 
 import android.app.Application
 import com.facebook.react.PackageList

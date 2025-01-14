@@ -7,6 +7,10 @@ import {
   ScrollView,
   BackHandler,
 } from 'react-native';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
 import CustomHeader from '../../../shared/CustomHeader';
 import ContentSection from '../../../shared/ContentSection';
 
@@ -29,8 +33,8 @@ const ContactUs = ({navigation}) => {
 
   return (
     <View style={styles.container}>
-      {/* <StatusBar translucent backgroundColor="#F3F7FF" /> */}
-      <View style={{paddingTop: 20}}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F3F7FF" />
+      <View style={{paddingTop:hp('3%')}}>
         <CustomHeader
           title="Contact us"
           icon={require('../../../assets/images/back.png')}

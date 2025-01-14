@@ -20,6 +20,7 @@ import {
   useGetAdvocateQuery,
 } from '../../../redux/api/api';
 import CustomDeleteModal from '../../../../shared/CustomDeleteModal';
+import { handleError } from '../../../../shared/authUtils';
 
 const ViewAllExperience = () => {
   const navigation = useNavigation();
@@ -39,9 +40,10 @@ const ViewAllExperience = () => {
   // Handle error state
   if (error) {
     console.log(error);
+    handleError(error);
     // Show the flash message
     showMessage({
-      message: `An error occurred: ${error.message}`,
+      message: `An error occurred: ${error?.message}`,
       type: 'danger',
       titleStyle: {fontFamily: 'Poppins'},
       style: {backgroundColor: 'red'},

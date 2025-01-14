@@ -4,4 +4,5 @@
 // export const server='https://law-wheels-connect.onrender.com/';
 // export const server='https://lawwheel.in/';
 // export const server='http://192.168.1.18:5001/'; // for Airtel_0955
-export const server='http://192.168.1.13:5001/'; // for Airtel_3888
+export const server='http://192.168.249.216:5001/'; // for Airtel_3888
+

@@ -23,6 +23,7 @@ import Swiper from 'react-native-swiper';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import CustomHeader from '../../../shared/CustomHeader';
 import {useGetUserSlotQuery} from '../../redux/api/api';
+import { handleError } from '../../../shared/authUtils';
 
 const {width} = Dimensions.get('window');
 
@@ -77,7 +78,8 @@ export default function UserSchedule() {
   // Handle error state
   if (error) {
     console.log(error);
-    return <Text>An error occurred: {error.message}</Text>;
+    handleError(error);
+    // return <Text>An error occurred: {error?.message}</Text>;
   }
 
   const weeks = React.useMemo(() => {
@@ -140,9 +142,9 @@ export default function UserSchedule() {
 
   return (
     <>
-     <StatusBar
-        barStyle="light-content" // Options: 'default', 'light-content', 'dark-content'
-        backgroundColor="#1262D2" // Background color for Android
+      <StatusBar
+        barStyle="dark-content" // Options: 'default', 'light-content', 'dark-content'
+        backgroundColor="#F3F7FF" // Background color for Android
       />
       <SafeAreaView style={{flex: 1}}>
         <View style={styles.container}>
@@ -253,6 +255,25 @@ export default function UserSchedule() {
             <View style={{marginVertical: wp('2.5%')}}>
               <View style={styles.recentConsultationContainer}>
                 <Text style={styles.recentConsultationTitle}>Upcoming</Text>
+                {slotsData?.data?.length === 0 ||
+            !slotsData?.data?.some(item =>
+              item.slotes.some(slot => slot.status === 'Upcoming'),
+            ) ? (
+              <View
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: wp('100%'),
+              }}>
+              <Image
+                source={require('../../../assets/images/NoResult.png')}
+                style={{width: 150, height: 150}}
+              />
+              <Text style={styles.noCreatedSlotMessage}>
+                No upcoming slot
+              </Text>
+            </View>
+            ) : (
                 <FlatList
                   horizontal
                   data={slotData}
@@ -266,7 +287,7 @@ export default function UserSchedule() {
                         <View style={styles.consultationHeader}>
                           <Text
                             style={[styles.consultantName, {color: '#294776'}]}>
-                            {item.advocate.name}
+                            {item?.advocate?.name}
                           </Text>
                           <View
                             style={[
@@ -296,7 +317,7 @@ export default function UserSchedule() {
                               styles.consultationDate,
                               {color: '#1262D2'},
                             ]}>
-                            {item.date}
+                            {item?.date}
                           </Text>
                         </View>
                         <View
@@ -315,19 +336,19 @@ export default function UserSchedule() {
                               styles.consultationDate,
                               {color: '#1262D2'},
                             ]}>
-                            {item.time}
+                            {item?.time}
                           </Text>
                         </View>
 
                         {/* Display Status */}
                         <Text style={styles.consultationDescription}>
-                          {item.client_legal_issue}
+                          {item?.client_legal_issue}
                         </Text>
                       </ImageBackground>
                     );
                   }}
                   showsHorizontalScrollIndicator={false}
-                />
+                />)}
               </View>
             </View>
 
@@ -472,7 +493,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
-    // paddingTop:hp('0.2%')
+    paddingTop: hp('4%'),
   },
   monthHeader: {
     flexDirection: 'row',
@@ -601,5 +622,12 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     marginVertical: 10,
+  },
+  noCreatedSlotMessage: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#888', // Or any color of your choice
+    marginVertical: 10,
+    fontFamily: 'Poppins',
   },
 });

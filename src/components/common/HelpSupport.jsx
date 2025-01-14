@@ -7,6 +7,10 @@ import {
   ScrollView,
   BackHandler,
 } from 'react-native';
+import {
+  widthPercentageToDP as wp,
+  heightPercentageToDP as hp,
+} from 'react-native-responsive-screen';
 import CustomHeader from '../../../shared/CustomHeader';
 import ContentSection from '../../../shared/ContentSection';
 
@@ -28,6 +32,11 @@ const HelpSupport = ({navigation}) => {
   }, [navigation]);
 
   return (
+    <>
+     <StatusBar
+        barStyle="dark-content" // Options: 'default', 'light-content', 'dark-content'
+        backgroundColor="#F3F7FF" 
+      />
     <View style={styles.container}>
       <CustomHeader
         title="Help & Support"
@@ -75,6 +84,7 @@ const HelpSupport = ({navigation}) => {
         </Text>
       </ScrollView>
     </View>
+    </>
   );
 };
 
@@ -82,6 +92,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
+    paddingTop:hp('3%')
   },
   scrollView: {
     flexGrow: 1,

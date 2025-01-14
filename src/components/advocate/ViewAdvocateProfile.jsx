@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
   Alert,
   Switch,
-  RefreshControl
+  RefreshControl,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
@@ -33,9 +34,12 @@ import {
 } from '../../redux/api/api';
 import CustomDeleteModal from '../../../shared/CustomDeleteModal';
 import navigationStrings from '../../constants/navigationStrings';
+import StarRating from '../../../shared/StarRating';
+import Reviews from './Reviews';
+import {handleError} from '../../../shared/authUtils';
 
 const ViewAdvocateProfile = ({navigation}) => {
-  const [refresh,setRefresh]=useState(false);
+  const [refresh, setRefresh] = useState(false);
   const [isProfileVisible, setIsProfileVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('Professional');
   const [isModalVisible, setModalVisible] = useState(false);
@@ -53,17 +57,21 @@ const ViewAdvocateProfile = ({navigation}) => {
   const [dropdownVisibleIndex, setDropdownVisibleIndex] = useState(null);
   const [localCertificates, setLocalCertificates] = useState([]);
   const [localExperiences, setLocalExperiences] = useState([]);
+  const [localEducations, setLocalEducations] = useState([]);
 
-  const toggleDropdown = (index) => {
+  const toggleDropdown = index => {
     setDropdownVisibleIndex(dropdownVisibleIndex === index ? null : index);
   };
 
-  const [dropdownVisibleCertificate, setDropdownVisibleCertificate] = useState(null);
+  const [dropdownVisibleCertificate, setDropdownVisibleCertificate] =
+    useState(null);
 
-  const toggleDropdownCertificate = (index) => {
-    setDropdownVisibleCertificate(dropdownVisibleCertificate === index ? null : index);
+  const toggleDropdownCertificate = index => {
+    setDropdownVisibleCertificate(
+      dropdownVisibleCertificate === index ? null : index,
+    );
   };
-  const {data, error, isLoading,refetch} = useGetAdvocateQuery();
+  const {data, error, isLoading, refetch} = useGetAdvocateQuery();
   console.log('data', data);
   // console.log(data?.data[0]?.specialization);
   const {
@@ -76,7 +84,8 @@ const ViewAdvocateProfile = ({navigation}) => {
   const [advocateCoverPic] = useAdvocateCoverPicMutation();
   const [deleteAdvocateCoverPic] = useDeleteAdvocateCoverPicMutation();
   const [deleteAdvocateProfilePic] = useDeleteAdvocateProfilePicMutation();
-  const [advocateProfileVisible] = useAdvocateProfileVisibleMutation();
+  const [advocateProfileVisible, {isLoading: advocatePic}] =
+    useAdvocateProfileVisibleMutation();
   const [deleteExperience] = useDeleteExperienceMutation();
 
   const [deleteEducation] = useDeleteEducationMutation();
@@ -93,6 +102,108 @@ const ViewAdvocateProfile = ({navigation}) => {
       setLocalExperiences(data.data[0].experiences);
     }
   }, [data]);
+  useEffect(() => {
+    if (data && data?.data[0] && data?.data[0]?.educations) {
+      setLocalEducations(data.data[0].educations);
+    }
+  }, [data]);
+
+  const feedbacks = [
+    {
+      id: '1',
+      name: 'Elizabeth Olsen',
+      avatar: require('../../../assets/images/avatarImage.jpg'),
+      date: '28-10-2024',
+      feedback:
+        'Lorem ipsum is typically a corrupted version of De finibus bonorum et malorum, a 1st-century BC text.',
+      likes: 15,
+      dislikes: 0,
+      timeAgo: '2m ago',
+    },
+    {
+      id: '2',
+      name: 'Elizabeth Olsen',
+      avatar: require('../../../assets/images/avatarImage.jpg'),
+      date: '28-10-2024',
+      feedback:
+        'Lorem ipsum is typically a corrupted version of De finibus bonorum et malorum, a 1st-century BC text.',
+      likes: 15,
+      dislikes: 0,
+      timeAgo: '2m ago',
+    },
+    {
+      id: '3',
+      name: 'Elizabeth Olsen',
+      avatar: require('../../../assets/images/avatarImage.jpg'),
+      date: '28-10-2024',
+      feedback:
+        'Lorem ipsum is typically a corrupted version of De finibus bonorum et malorum, a 1st-century BC text.',
+      likes: 15,
+      dislikes: 0,
+      timeAgo: '2m ago',
+    },
+    {
+      id: '4',
+      name: 'Elizabeth Olsen',
+      avatar: require('../../../assets/images/avatarImage.jpg'),
+      date: '28-10-2024',
+      feedback:
+        'Lorem ipsum is typically a corrupted version of De finibus bonorum et malorum, a 1st-century BC text.',
+      likes: 15,
+      dislikes: 0,
+      timeAgo: '2m ago',
+    },
+    {
+      id: '5',
+      name: 'Elizabeth Olsen',
+      avatar: require('../../../assets/images/avatarImage.jpg'),
+      date: '28-10-2024',
+      feedback:
+        'Lorem ipsum is typically a corrupted version of De finibus bonorum et malorum, a 1st-century BC text.',
+      likes: 15,
+      dislikes: 0,
+      timeAgo: '2m ago',
+    },
+  ];
+
+  const FeedbackCard = ({feedback}) => {
+    return (
+      <View style={styles.card}>
+        <View style={styles.header}>
+          <Image source={feedback.avatar} style={styles.avatar} />
+          <View style={styles.headerText}>
+            <Text style={styles.name}>{feedback.name}</Text>
+            <View>
+              <View style={styles.starRating}>
+                <Text style={styles.stars}>★★★★★</Text>
+                <Text style={styles.date}>{feedback.date}</Text>
+              </View>
+              <Text style={styles.feedbackText}>{feedback.feedback}</Text>
+              <View style={styles.actions}>
+                <View style={styles.likesDislikes}>
+                  <TouchableOpacity style={styles.likeButton}>
+                    <Image
+                      source={require('../../../assets/images/icons/like.png')}
+                      style={{width: 24, height: 24}}
+                    />
+                    <Text style={styles.likeCount}>{feedback.likes}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.dislikeButton}>
+                    <Image
+                      source={require('../../../assets/images/icons/dislike.png')}
+                      style={{width: 24, height: 24}}
+                    />
+                    <Text style={styles.dislikeCount}>{feedback.dislikes}</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.timeAgo}>{feedback.timeAgo}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   const pullMe = async () => {
     try {
@@ -112,9 +223,9 @@ const ViewAdvocateProfile = ({navigation}) => {
   const handleDeleteCertificate = async () => {
     try {
       const updatedCertificates = localCertificates?.data?.filter(
-        (certificate) => certificate._id !== selectedCertificateId
+        certificate => certificate._id !== selectedCertificateId,
       );
-      setLocalCertificates(updatedCertificates); 
+      setLocalCertificates(updatedCertificates);
       const res = await deleteCertificate({id: selectedCertificateId}).unwrap();
       console.log(res);
 
@@ -162,6 +273,10 @@ const ViewAdvocateProfile = ({navigation}) => {
 
   const handleDeleteEducation = async () => {
     try {
+      const updatedEducations = localEducations?.filter(
+        education => education._id !== selectedEducationId,
+      );
+      setLocalEducations(updatedEducations);
       const res = await deleteEducation({id: selectedEducationId}).unwrap();
       console.log(res);
 
@@ -174,6 +289,7 @@ const ViewAdvocateProfile = ({navigation}) => {
           textStyle: {fontFamily: 'Poppins'},
         });
       } else {
+        setLocalEducations(updatedEducations);
         const errorMsg = res.error?.data?.message || 'Something went wrong!';
         showMessage({
           message: 'Error',
@@ -184,6 +300,7 @@ const ViewAdvocateProfile = ({navigation}) => {
         });
       }
     } catch (error) {
+      setLocalEducations(updatedEducations);
       console.error('Failed to delete profile picture: ', error);
       const errorMsg =
         error?.response?.data?.error?.data?.message || 'Something went wrong!';
@@ -217,8 +334,7 @@ const ViewAdvocateProfile = ({navigation}) => {
       });
     }
   }, [data, error]);
-  // Handle loading state
-  // console.log('certificate', certificateData);
+
   if (isLoading || certificateLoading) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -230,7 +346,8 @@ const ViewAdvocateProfile = ({navigation}) => {
   // Handle error state
   if (error) {
     console.log(error);
-    return <Text>An error occurred: {error.message}</Text>;
+    handleError(error);
+    return <Text>An error occurred: {error?.message}</Text>;
   }
 
   const handleFileUpload = async () => {
@@ -255,12 +372,27 @@ const ViewAdvocateProfile = ({navigation}) => {
       const response = await advocateProfilePic(formData).unwrap();
       console.log('advocatePic', response);
       if (response && response?.success) {
-        Alert.alert(`${response?.message}`, `Uploaded: ${name}`);
-        console.log('Upload success:', data);
+        // Alert.alert(`${response?.message}`, `Uploaded: ${name}`);
+        // console.log('Upload success:', data);
+        showMessage({
+          message: 'Success',
+          description: response.message,
+          type: 'success',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
+        setModalVisible(false);
       } else {
         const errorMsg =
           response.error?.data?.message || 'Something went wrong!';
-        Alert.alert('Error', errorMsg);
+        // Alert.alert('Error', errorMsg);
+        showMessage({
+          message: 'Error',
+          description: errorMsg,
+          type: 'danger',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
       }
     } catch (error) {
       if (DocumentPicker.isCancel(error)) {
@@ -269,7 +401,14 @@ const ViewAdvocateProfile = ({navigation}) => {
         const errorMsg =
           error?.response?.data?.error?.data?.message ||
           'Something went wrong!';
-        Alert.alert('Error', errorMsg);
+        // Alert.alert('Error', errorMsg);
+        showMessage({
+          message: 'Error',
+          description: errorMsg,
+          type: 'danger',
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
+        });
       }
     }
   };
@@ -300,11 +439,11 @@ const ViewAdvocateProfile = ({navigation}) => {
           message: 'Success',
           description: `${response?.message}`,
           type: 'success',
-
           titleStyle: {fontFamily: 'Poppins'}, // Custom heading style
           textStyle: {fontFamily: 'Poppins'},
         });
         console.log('Upload success:', data);
+        setIsCoverImage(false);
       } else {
         const errorMsg =
           response.error?.data?.message || 'Something went wrong!';
@@ -312,7 +451,6 @@ const ViewAdvocateProfile = ({navigation}) => {
           message: 'Error',
           description: errorMsg,
           type: 'danger',
-
           titleStyle: {fontFamily: 'Poppins'}, // Custom heading style
           textStyle: {fontFamily: 'Poppins'},
         });
@@ -343,85 +481,6 @@ const ViewAdvocateProfile = ({navigation}) => {
   const openCoverModal = () => setIsCoverImage(true);
   const closeCoverModal = () => setIsCoverImage(false);
 
- 
-  // const toggleSwitch = async () => {
-  //   const newVisibility = !isProfileVisible;
-  //   setIsProfileVisible(newVisibility);
-  
-  //   try {
-  //     // Call the API with the updated visibility value
-  //     const res = await advocateProfileVisible({
-  //       isProfileVisible: newVisibility,
-  //     });
-  //     console.log(res);
-  
-  //     if (res && res?.data?.success) {
-  //       // Success message
-  //       showMessage({
-  //         message: 'Success',
-  //         description: res?.data?.message,
-  //         type: 'success',
-  //         titleStyle: { fontFamily: 'Poppins SemiBold' },
-  //         textStyle: { fontFamily: 'Poppins' },
-  //       });
-  //     } else {
-  //       const errorMsg = res.error?.data?.message || 'Something went wrong!';
-  //       setIsProfileVisible(false); // Revert state back to false if there's an error
-  
-  //       // Handle specific error messages and navigate accordingly
-  //       if (errorMsg === 'NOEXPERIENCE!') {
-  //         showMessage({
-  //           message: 'Incomplete Profile',
-  //           description: 'Please add your experience to complete your profile.',
-  //           type: 'warning',
-  //           titleStyle: { fontFamily: 'Poppins SemiBold' },
-  //           textStyle: { fontFamily: 'Poppins' },
-  //         });
-  //         navigation.navigate('AddExperience'); // Navigate to AddExperience screen
-  //       } else if (errorMsg === 'NOEDUCATION!') {
-  //         showMessage({
-  //           message: 'Incomplete Profile',
-  //           description: 'Please add your education to complete your profile.',
-  //           type: 'warning',
-  //           titleStyle: { fontFamily: 'Poppins SemiBold' },
-  //           textStyle: { fontFamily: 'Poppins' },
-  //         });
-  //         navigation.navigate('AddEducation'); // Navigate to AddEducation screen
-  //       } else if (errorMsg === 'NOLICENSE!') {
-  //         showMessage({
-  //           message: 'License Verification Needed',
-  //           description: 'Please verify your license to make your profile visible.',
-  //           type: 'warning',
-  //           titleStyle: { fontFamily: 'Poppins SemiBold' },
-  //           textStyle: { fontFamily: 'Poppins' },
-  //         });
-  //         navigation.navigate('VerifyAdvocate'); // Navigate to VerifyAdvocate screen
-  //       } else {
-  //         // General error message
-  //         showMessage({
-  //           message: 'Error',
-  //           description: errorMsg,
-  //           type: 'danger',
-  //           titleStyle: { fontFamily: 'Poppins SemiBold' },
-  //           textStyle: { fontFamily: 'Poppins' },
-  //         });
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.log(error);
-  //     const errorMsg =
-  //       error?.response?.data?.error?.data?.message || 'Something went wrong!';
-  //     setIsProfileVisible(false); // Revert state back to false in case of exception
-  //     showMessage({
-  //       message: 'Error',
-  //       description: errorMsg,
-  //       type: 'danger',
-  //       titleStyle: { fontFamily: 'Poppins SemiBold' },
-  //       textStyle: { fontFamily: 'Poppins' },
-  //     });
-  //   }
-  // };
-  
   const toggleSwitch = async () => {
     if (isProfileVisible) {
       // Show a message if the profile is already published and prevent toggling
@@ -429,43 +488,43 @@ const ViewAdvocateProfile = ({navigation}) => {
         message: 'Profile Already Published',
         description: 'You cannot change the visibility of a published profile.',
         type: 'warning',
-        titleStyle: { fontFamily: 'Poppins SemiBold' },
-        textStyle: { fontFamily: 'Poppins' },
+        titleStyle: {fontFamily: 'Poppins SemiBold'},
+        textStyle: {fontFamily: 'Poppins'},
       });
       return; // Exit the function to prevent further execution
     }
-  
+
     const newVisibility = !isProfileVisible;
     setIsProfileVisible(newVisibility);
-  
+
     try {
       // Call the API with the updated visibility value
       const res = await advocateProfileVisible({
         isProfileVisible: newVisibility,
       });
       console.log(res);
-  
+
       if (res && res?.data?.success) {
         // Success message
         showMessage({
           message: 'Success',
           description: res?.data?.message,
           type: 'success',
-          titleStyle: { fontFamily: 'Poppins SemiBold' },
-          textStyle: { fontFamily: 'Poppins' },
+          titleStyle: {fontFamily: 'Poppins SemiBold'},
+          textStyle: {fontFamily: 'Poppins'},
         });
       } else {
         const errorMsg = res.error?.data?.message || 'Something went wrong!';
         setIsProfileVisible(false); // Revert state back to false if there's an error
-  
+
         // Handle specific error messages and navigate accordingly
         if (errorMsg === 'NOEXPERIENCE!') {
           showMessage({
             message: 'Incomplete Profile',
             description: 'Please add your experience to complete your profile.',
             type: 'warning',
-            titleStyle: { fontFamily: 'Poppins SemiBold' },
-            textStyle: { fontFamily: 'Poppins' },
+            titleStyle: {fontFamily: 'Poppins SemiBold'},
+            textStyle: {fontFamily: 'Poppins'},
           });
           navigation.navigate('AddExperience'); // Navigate to AddExperience screen
         } else if (errorMsg === 'NOEDUCATION!') {
@@ -473,8 +532,8 @@ const ViewAdvocateProfile = ({navigation}) => {
             message: 'Incomplete Profile',
             description: 'Please add your education to complete your profile.',
             type: 'warning',
-            titleStyle: { fontFamily: 'Poppins SemiBold' },
-            textStyle: { fontFamily: 'Poppins' },
+            titleStyle: {fontFamily: 'Poppins SemiBold'},
+            textStyle: {fontFamily: 'Poppins'},
           });
           navigation.navigate('AddEducation'); // Navigate to AddEducation screen
         } else if (errorMsg === 'NOLICENSE!') {
@@ -483,8 +542,8 @@ const ViewAdvocateProfile = ({navigation}) => {
             description:
               'Please verify your license to make your profile visible.',
             type: 'warning',
-            titleStyle: { fontFamily: 'Poppins SemiBold' },
-            textStyle: { fontFamily: 'Poppins' },
+            titleStyle: {fontFamily: 'Poppins SemiBold'},
+            textStyle: {fontFamily: 'Poppins'},
           });
           navigation.navigate('VerifyAdvocate'); // Navigate to VerifyAdvocate screen
         } else {
@@ -493,8 +552,8 @@ const ViewAdvocateProfile = ({navigation}) => {
             message: 'Error',
             description: errorMsg,
             type: 'danger',
-            titleStyle: { fontFamily: 'Poppins SemiBold' },
-            textStyle: { fontFamily: 'Poppins' },
+            titleStyle: {fontFamily: 'Poppins SemiBold'},
+            textStyle: {fontFamily: 'Poppins'},
           });
         }
       }
@@ -507,12 +566,12 @@ const ViewAdvocateProfile = ({navigation}) => {
         message: 'Error',
         description: errorMsg,
         type: 'danger',
-        titleStyle: { fontFamily: 'Poppins SemiBold' },
-        textStyle: { fontFamily: 'Poppins' },
+        titleStyle: {fontFamily: 'Poppins SemiBold'},
+        textStyle: {fontFamily: 'Poppins'},
       });
     }
   };
-  
+
   const handleGoBack = () => {
     navigation.goBack();
   };
@@ -549,7 +608,7 @@ const ViewAdvocateProfile = ({navigation}) => {
   const handleDeleteProfilePic = async () => {
     try {
       const res = await deleteAdvocateProfilePic().unwrap();
-      console.log(res);
+      // console.log(res);
 
       if (res && res?.success) {
         showMessage({
@@ -589,7 +648,7 @@ const ViewAdvocateProfile = ({navigation}) => {
   const handleDeleteCoverPic = async () => {
     try {
       const res = await deleteAdvocateCoverPic().unwrap();
-      console.log(res);
+      // console.log(res);
 
       if (res && res?.success) {
         showMessage({
@@ -639,13 +698,12 @@ const ViewAdvocateProfile = ({navigation}) => {
     });
   };
 
-console.log(certificateData)
   const handleDeleteExperience = async () => {
     try {
       const updatedExperiences = localExperiences?.filter(
-        (experience) => experience._id !== selectedExperienceId
+        experience => experience._id !== selectedExperienceId,
       );
-      setLocalExperiences(updatedExperiences); 
+      setLocalExperiences(updatedExperiences);
       const res = await deleteExperience({id: selectedExperienceId}).unwrap();
       console.log(res);
 
@@ -691,7 +749,11 @@ console.log(certificateData)
 
   return (
     <>
-      <ScrollView style={styles.container} refreshControl={<RefreshControl refreshing={refresh} onRefresh={pullMe} />}>
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={refresh} onRefresh={pullMe} />
+        }>
         <ImageBackground
           source={
             data && data?.data[0]?.coverPic && data?.data[0]?.coverPic?.url
@@ -723,28 +785,25 @@ console.log(certificateData)
               />
               <TouchableOpacity style={styles.editButton} onPress={openModal}>
                 <Image
-                  source={require('../../../assets/images/edit-2.png')}
+                  source={require('../../../assets/images/icons/edit.png')}
                   style={{width: 20, height: 20}}
                 />
               </TouchableOpacity>
             </View>
 
-            <View style={{marginTop: hp(2)}}>
-              <View style={styles.starRating}>
-                {/* <Text style={styles.stars}>★★★★★</Text> */}
-                <View style={styles.starsContainer}>
-                  {[...Array(5)].map((_, index) => (
-                    <Image
-                      key={index}
-                      source={require('../../../assets/images/star.png')}
-                      style={styles.starImage}
-                    />
-                  ))}
-                </View>
-                <Text style={styles.ratingText}>5/5</Text>
+            <View style={styles.starRating}>
+              <View style={{marginTop: hp('3%')}}>
+                <StarRating
+                  rating={data?.data[0]?.averageRating}
+                  starSize={20}
+                />
               </View>
+              <Text style={styles.ratingText}>
+                {data?.data[0]?.averageRating || 0}/5
+              </Text>
             </View>
           </View>
+          {/* </View> */}
 
           {/* Update Cover Image Label */}
           <TouchableOpacity
@@ -760,7 +819,12 @@ console.log(certificateData)
           {/* Profile Info Section */}
           <View style={styles.infoContainer}>
             <View>
-              <View style={{flexDirection: 'row'}}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  width: wp('60%'),
+                 
+                }}>
                 <Text style={styles.name}>{data && data?.data[0]?.name}</Text>
                 <TouchableOpacity
                   onPress={() => navigation.navigate('UpdateBio')}>
@@ -793,7 +857,13 @@ console.log(certificateData)
                 </View>
               )}
             </View>
-            <View>
+            <View style={{width: wp('40%'), alignItems: 'center'}}>
+              <Text
+                style={{
+                  fontFamily: 'Poppins',
+                  fontSize: hp('2%'),
+                  textAlign: 'center',
+                }}>{`${'Profile visible'}`}</Text>
               <Switch
                 trackColor={{false: '#767577', true: '#1262D2'}}
                 thumbColor={isProfileVisible ? '#ffffff' : '#f4f3f4'}
@@ -802,6 +872,95 @@ console.log(certificateData)
               />
             </View>
           </View>
+          {/* <View>
+            <View
+              style={{
+                width: '100%',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: hp('2%'),
+              }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  width: '42%',
+                }}>
+                <TouchableWithoutFeedback
+                  onPress={() => navigation.navigate('MyFollowers')}>
+                  <Text
+                    style={{
+                      textAlign: 'center',
+                      fontFamily: 'Poppins',
+                    }}>{`${data?.data[0]?.follower || 0}\n Followers`}</Text>
+                </TouchableWithoutFeedback>
+                <TouchableWithoutFeedback
+                  onPress={() => navigation.navigate('MyFollowings')}>
+                  <Text
+                    style={{
+                      textAlign: 'center',
+                      fontFamily: 'Poppins',
+                    }}>{`${data?.data[0]?.following || 0} \n Following`}</Text>
+                </TouchableWithoutFeedback>
+              </View>
+            </View>
+            {/* <View
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginVertical:hp('2%')
+              }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  width: '80%',
+                }}>
+                <TouchableOpacity
+                  style={{
+                    width: wp('38%'),
+                    height: hp('6%'),
+                    borderColor: '#1262D2',
+                    borderWidth: 1,
+                    paddingHorizontal: wp('5%'),
+                    paddingVertical: hp('1%'),
+                    borderRadius: wp('1%'),
+                  }}>
+                  <Text
+                    style={{
+                      textAlign: 'center',
+                      fontFamily: 'Poppins',
+                      color: '#1262D2',
+                      fontSize: hp('2%'),
+                    }}>
+                    Message
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    width: wp('38%'),
+                    height: hp('6%'),
+                    borderColor: '#1262D2',
+                    borderWidth: 1,
+                    backgroundColor: '#1262D2',
+                    paddingHorizontal: wp('5%'),
+                    paddingVertical: hp('1%'),
+                    borderRadius: wp('1%'),
+                  }}>
+                  <Text
+                    style={{
+                      textAlign: 'center',
+                      fontFamily: 'Poppins',
+                      color: '#fff',
+                      fontSize: hp('2%'),
+                    }}>
+                    Follow
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View> 
+          </View> 
 
           {/* Stats Section */}
           <View style={styles.statsContainer}>
@@ -826,7 +985,7 @@ console.log(certificateData)
             </View>
             <View style={styles.verticalLine} />
             <View style={styles.stat}>
-              <Text style={styles.statNumber}>47 Booking</Text>
+              <Text style={styles.statNumber}>0 Booking</Text>
               <Text style={styles.statLabel}>Session Done</Text>
             </View>
           </View>
@@ -834,14 +993,19 @@ console.log(certificateData)
           {/* Tabs Section */}
           <View style={styles.tabsContainer}>
             <TabButton
-              title="Professional Details"
+              title={`Professional\nDetails`}
               active={activeTab === 'Professional'}
               onPress={() => setActiveTab('Professional')}
             />
             <TabButton
-              title="Educational Details"
+              title={`Educational\nDetails`}
               active={activeTab === 'Educational'}
               onPress={() => setActiveTab('Educational')}
+            />
+            <TabButton
+              title={`Review`}
+              active={activeTab === 'Review'}
+              onPress={() => setActiveTab('Review')}
             />
           </View>
           {activeTab === 'Professional' && (
@@ -935,7 +1099,7 @@ console.log(certificateData)
                     </Text>
                   </View>
                   <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Language Spoken</Text>
+                    <Text style={styles.detailLabel}>Language</Text>
                     <Text style={styles.detailValue}>
                       {(data && data?.data[0]?.language?.join(', ')) || 'N/A'}
                     </Text>
@@ -968,7 +1132,9 @@ console.log(certificateData)
                   localExperiences,
                   navigation,
                   openDeleteModal,
-                  dropdownVisibleIndex, setDropdownVisibleIndex,toggleDropdown
+                  dropdownVisibleIndex,
+                  setDropdownVisibleIndex,
+                  toggleDropdown,
                 )}
                 <CustomDeleteModal
                   visible={deleteModalVisible}
@@ -1024,9 +1190,7 @@ console.log(certificateData)
                     {data && data?.data[0]?.userSkills?.length !== 0 ? (
                       <TouchableOpacity
                         style={{marginRight: 5}}
-                        onPress={() =>
-                          navigation.navigate("ViewSkill")
-                        }>
+                        onPress={() => navigation.navigate('ViewSkill')}>
                         <Image
                           source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
                           style={{width: 22, height: 22}}
@@ -1082,10 +1246,12 @@ console.log(certificateData)
                 </View>
 
                 {renderEducations(
-                  data && data?.data[0]?.educations,
+                  localEducations,
                   navigation,
                   openDeleteModalEducation,
-                  dropdownVisibleIndex,setDropdownVisibleIndex, toggleDropdown
+                  dropdownVisibleIndex,
+                  setDropdownVisibleIndex,
+                  toggleDropdown,
                 )}
                 <CustomDeleteModal
                   visible={deleteModalEducation}
@@ -1120,7 +1286,9 @@ console.log(certificateData)
                   localCertificates && localCertificates?.data,
                   navigation,
                   openDeleteModalCertificate,
-                  dropdownVisibleCertificate,setDropdownVisibleCertificate, toggleDropdownCertificate
+                  dropdownVisibleCertificate,
+                  setDropdownVisibleCertificate,
+                  toggleDropdownCertificate,
                 )}
                 <CustomDeleteModal
                   visible={deleteModalCertificate}
@@ -1130,6 +1298,11 @@ console.log(certificateData)
                 />
               </View>
             </>
+          )}
+          {activeTab === 'Review' && (
+            <View style={{marginTop: 10}}>
+              <Reviews />
+            </View>
           )}
         </View>
       </ScrollView>
@@ -1297,63 +1470,22 @@ console.log(certificateData)
   );
 };
 
-// const renderExperiences = experiences => {
-//   if (!experiences || experiences.length === 0) {
-//     return <Text style={styles.noExperienceMessage}>No experience added</Text>;
-//   }
-//   function formatDate(dateString) {
-//     // Create a new Date object from the date string
-//     const date = new Date(dateString);
-
-//     // Define options for formatting
-//     const options = {year: 'numeric', month: 'long', day: 'numeric'};
-
-//     // Format the date using toLocaleDateString
-//     return date.toLocaleDateString('en-US', options);
-//   }
-//   // Sort experiences by createdAt (newest first)
-//   const sortedExperiences = [...experiences].sort((a, b) => {
-//     return new Date(b.createdAt) - new Date(a.createdAt);
-//   });
-
-//   return sortedExperiences.map((experience, index) => {
-//     const {
-//       jobTitle,
-//       firmName,
-//       startDate,
-//       endDate,
-//       isOngoing,
-//       isRecent,
-//       description,
-//     } = experience;
-
-//     // Format the dates
-//     const formattedStartDate = `${formatDate(startDate)}`;
-//     const formattedEndDate = isOngoing ? 'Present' : `${formatDate(endDate)}`;
-
-//     return (
-//       <View key={index} style={styles.experienceItem}>
-//         <Text style={styles.experiencePeriod}>
-//           {formattedStartDate} - {formattedEndDate}
-//         </Text>
-
-//         <Text style={styles.experienceTitle}>
-//           {jobTitle}, {firmName}
-//         </Text>
-
-//         <Text style={styles.experienceDetail}>{description}</Text>
-//       </View>
-//     );
-//   });
-// };
-
-const renderExperiences = (experiences, navigation, openDeleteModal, dropdownVisibleIndex,setDropdownVisibleIndex, toggleDropdown) => {
-
-  // Sort experiences by createdAt (newest first)
+const renderExperiences = (
+  experiences,
+  navigation,
+  openDeleteModal,
+  dropdownVisibleIndex,
+  setDropdownVisibleIndex,
+  toggleDropdown,
+) => {
+  // Sort first by isOngoing (ongoing education comes first), then by createdAt (newest first)
   const sortedExperiences = [...experiences].sort((a, b) => {
-    return new Date(b.createdAt) - new Date(a.createdAt);
+    if (a.isOngoing && !b.isOngoing) {
+      return -1; // a is ongoing, so it comes before b
+    } else if (!a.isOngoing && b.isOngoing) {
+      return 1; // b is ongoing, so it comes before a
+    }
   });
-
   function formatDate(dateString) {
     // Create a new Date object from the date string
     const date = new Date(dateString);
@@ -1364,6 +1496,7 @@ const renderExperiences = (experiences, navigation, openDeleteModal, dropdownVis
     // Format the date using toLocaleDateString
     return date.toLocaleDateString('en-US', options);
   }
+
   return sortedExperiences.map((experience, index) => {
     const {
       _id,
@@ -1380,117 +1513,74 @@ const renderExperiences = (experiences, navigation, openDeleteModal, dropdownVis
     const formattedStartDate = `${formatDate(startDate)}`;
     const formattedEndDate = isOngoing ? 'Present' : `${formatDate(endDate)}`;
 
+    const handleOutsidePress = () => {
+      // Close the dropdown when tapped outside
+      setDropdownVisibleIndex(null);
+    };
     return (
-      <View key={index} style={styles.experienceItem}>
-        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-          <Text style={styles.experiencePeriod}>
-            {formattedStartDate} - {formattedEndDate}
-          </Text>
-          <View style={{flexDirection: 'row'}}>
-            <TouchableOpacity onPress={() => toggleDropdown(index)}>
-              <Image
-                source={require('../../../assets/images/3dots.png')} // Replace with the 3-dot icon
-                style={{width: 22, height: 22}}
-              />
-            </TouchableOpacity>
-            {dropdownVisibleIndex === index && (
-              <View style={styles.dropdown}>
-                <TouchableOpacity
-                  // style={{marginRight: 5}}
-                  // onPress={() => navigation.navigate('EditExperience', {id: _id})}
-                  style={styles.dropdownOption}
-                  onPress={() => {
-                    setDropdownVisibleIndex(null);
-                    navigation.navigate('EditExperience', {id: _id});
-                  }}>
-                  <Image
-                    source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
-                    style={{width: 22, height: 22}}
-                  />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.dropdownOption}
-                  onPress={() => {
-                    setDropdownVisibleIndex(null);
-                    openDeleteModal(_id);
-                  }}
-                  // onPress={() => openDeleteModal(_id)}
-                >
-                  <Image
-                    source={require('../../../assets/images/icons/trash.png')} // Path to the profile image
-                    style={{width: 22, height: 22}}
-                  />
-                </TouchableOpacity>
-              </View>
-            )}
+      <TouchableWithoutFeedback onPress={handleOutsidePress}>
+        <View key={index} style={styles.experienceItem}>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+            <Text style={styles.experiencePeriod}>
+              {formattedStartDate} - {formattedEndDate}
+            </Text>
+            <View style={{flexDirection: 'row'}}>
+              <TouchableOpacity onPress={() => toggleDropdown(index)}>
+                <Image
+                  source={require('../../../assets/images/3dots.png')} // Replace with the 3-dot icon
+                  style={{width: 22, height: 22}}
+                />
+              </TouchableOpacity>
+              {dropdownVisibleIndex === index && (
+                <View style={styles.dropdown}>
+                  <TouchableOpacity
+                    style={styles.dropdownOption}
+                    onPress={() => {
+                      setDropdownVisibleIndex(null);
+                      navigation.navigate('EditExperience', {id: _id});
+                    }}>
+                    <Image
+                      source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
+                      style={{width: 22, height: 22}}
+                    />
+                  </TouchableOpacity>
+                  {!isOngoing && (
+                    <TouchableOpacity
+                      style={styles.dropdownOption}
+                      onPress={() => {
+                        setDropdownVisibleIndex(null);
+                        openDeleteModal(_id);
+                      }}>
+                      <Image
+                        source={require('../../../assets/images/icons/trash.png')} // Path to the profile image
+                        style={{width: 22, height: 22}}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
           </View>
+
+          <Text style={styles.experienceTitle}>
+            {jobTitle}, {firmName}
+          </Text>
+
+          <Text style={styles.experienceDetail}>{description}</Text>
         </View>
-
-        <Text style={styles.experienceTitle}>
-          {jobTitle}, {firmName}
-        </Text>
-
-        <Text style={styles.experienceDetail}>{description}</Text>
-      </View>
+      </TouchableWithoutFeedback>
     );
   });
 };
-// const renderEducations = educations => {
-//   if (!educations || educations.length === 0) {
-//     return <Text style={styles.noExperienceMessage}>No education added</Text>;
-//   }
-//   function formatDate(dateString) {
-//     // Create a new Date object from the date string
-//     const date = new Date(dateString);
 
-//     // Define options for formatting
-//     const options = {year: 'numeric', month: 'long', day: 'numeric'};
-
-//     // Format the date using toLocaleDateString
-//     return date.toLocaleDateString('en-US', options);
-//   }
-//   // Create a shallow copy and sort by createdAt (newest first)
-//   const sortedEducations = [...educations].sort((a, b) => {
-//     return new Date(b.createdAt) - new Date(a.createdAt);
-//   });
-
-//   return sortedEducations.map((education, index) => {
-//     const {
-//       school_university,
-//       degreeType,
-//       fieldOfStudy,
-//       startDate,
-//       endDate,
-//       isOngoing,
-//       activities,
-//     } = education;
-
-//     // Format the dates
-//     const formattedStartDate = `${formatDate(startDate)}`;
-//     const formattedEndDate = isOngoing ? 'Present' : `${formatDate(endDate)}`;
-
-//     return (
-//       <View key={education._id} style={styles.experienceItem}>
-//         <Text style={styles.experiencePeriod}>
-//           {formattedStartDate} - {formattedEndDate}
-//         </Text>
-
-//         {/* Display education details */}
-//         <Text style={styles.experienceTitle}>
-//           {degreeType} in {fieldOfStudy}, {school_university}
-//         </Text>
-
-//         <Text style={styles.experienceDetail}>
-//           Studied {fieldOfStudy}, with a focus on {degreeType}. Activities:{' '}
-//           {activities}
-//         </Text>
-//       </View>
-//     );
-//   });
-// };
-const renderEducations = (educations, navigation, openDeleteModalEducation, dropdownVisibleIndex, setDropdownVisibleIndex,toggleDropdown) => {
- 
+const renderEducations = (
+  educations,
+  navigation,
+  openDeleteModalEducation,
+  dropdownVisibleIndex,
+  setDropdownVisibleIndex,
+  toggleDropdown,
+) => {
   if (!educations || educations.length === 0) {
     return <Text style={styles.noExperienceMessage}>No education added</Text>;
   }
@@ -1504,8 +1594,15 @@ const renderEducations = (educations, navigation, openDeleteModalEducation, drop
     // Format the date using toLocaleDateString
     return date.toLocaleDateString('en-US', options);
   }
-  // Create a shallow copy and sort by createdAt (newest first)
+
+  // Sort first by isOngoing (ongoing education comes first), then by createdAt (newest first)
   const sortedEducations = [...educations].sort((a, b) => {
+    if (a.isOngoing && !b.isOngoing) {
+      return -1; // a is ongoing, so it comes before b
+    } else if (!a.isOngoing && b.isOngoing) {
+      return 1; // b is ongoing, so it comes before a
+    }
+    // If both are ongoing or both are not ongoing, sort by createdAt date
     return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
@@ -1527,115 +1624,78 @@ const renderEducations = (educations, navigation, openDeleteModalEducation, drop
 
     const formattedEndDate = isOngoing ? 'Present' : `${formatDate(endDate)}`;
 
+    const handleOutsidePress = () => {
+      // Close the dropdown when tapped outside
+      setDropdownVisibleIndex(null);
+    };
+
     return (
-      <View key={_id} style={styles.experienceItem}>
-        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-          <Text style={styles.experiencePeriod}>
-            {formattedStartDate} - {formattedEndDate}
-          </Text>
-          <View style={{flexDirection: 'row'}}>
-            <TouchableOpacity onPress={() => toggleDropdown(index)}>
-              <Image
-                source={require('../../../assets/images/3dots.png')} // Replace with the 3-dot icon
-                style={{width: 22, height: 22}}
-              />
-            </TouchableOpacity>
-            {dropdownVisibleIndex === index && (
-              <View style={styles.dropdown}>
-                <TouchableOpacity
-                  // style={{marginRight: 5}}
-                  // onPress={() => navigation.navigate('EditEducation', {id: _id})}
-                  style={styles.dropdownOption}
-                  onPress={() => {
-                    setDropdownVisibleIndex(null);
-                    navigation.navigate('EditEducation', {id: _id});
-                  }}>
-                  <Image
-                    source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
-                    style={{width: 22, height: 22}}
-                  />
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.dropdownOption}
-                  onPress={() => {
-                    setDropdownVisibleIndex(null);
-                    openDeleteModalEducation(_id);
-                  }}
-                  //  onPress={() => openDeleteModalEducation(_id)}
-                >
-                  <Image
-                    source={require('../../../assets/images/icons/trash.png')} // Path to the profile image
-                    style={{width: 22, height: 22}}
-                  />
-                </TouchableOpacity>
-              </View>
-            )}
+      <TouchableWithoutFeedback onPress={handleOutsidePress}>
+        <View key={_id} style={styles.experienceItem}>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+            <Text style={styles.experiencePeriod}>
+              {formattedStartDate} - {formattedEndDate}
+            </Text>
+            <View style={{flexDirection: 'row'}}>
+              <TouchableOpacity onPress={() => toggleDropdown(index)}>
+                <Image
+                  source={require('../../../assets/images/3dots.png')} // Replace with the 3-dot icon
+                  style={{width: 22, height: 22}}
+                />
+              </TouchableOpacity>
+              {dropdownVisibleIndex === index && (
+                <View style={styles.dropdown}>
+                  <TouchableOpacity
+                    style={styles.dropdownOption}
+                    onPress={() => {
+                      setDropdownVisibleIndex(null);
+                      navigation.navigate('EditEducation', {id: _id});
+                    }}>
+                    <Image
+                      source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
+                      style={{width: 22, height: 22}}
+                    />
+                  </TouchableOpacity>
+                  {!isOngoing && (
+                    <TouchableOpacity
+                      style={styles.dropdownOption}
+                      onPress={() => {
+                        setDropdownVisibleIndex(null);
+                        openDeleteModalEducation(_id);
+                      }}>
+                      <Image
+                        source={require('../../../assets/images/icons/trash.png')} // Path to the profile image
+                        style={{width: 22, height: 22}}
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
           </View>
-        </View>
-        {/* Display education details */}
-        <Text style={styles.experienceTitle}>
-          {degreeType} in {fieldOfStudy}, {school_university}
-        </Text>
+          {/* Display education details */}
+          <Text style={styles.experienceTitle}>
+            {degreeType} in {fieldOfStudy}, {school_university}
+          </Text>
 
-        <Text style={styles.experienceDetail}>
-          Studied {fieldOfStudy}, with a focus on {degreeType}. Activities:{' '}
-          {activities}
-        </Text>
-      </View>
+          <Text style={styles.experienceDetail}>
+            Studied {fieldOfStudy}, with a focus on {degreeType}.{' '}
+            {activities && `. Activities: ${activities}`}
+          </Text>
+        </View>
+      </TouchableWithoutFeedback>
     );
   });
 };
-// const renderCertficate = certificates => {
-//   if (!certificates || certificates.length === 0) {
-//     return <Text style={styles.noExperienceMessage}>No certificate added</Text>;
-//   }
-
-//   function formatDate(dateString) {
-//     // Create a new Date object from the date string
-//     const date = new Date(dateString);
-
-//     // Define options for formatting
-//     const options = {year: 'numeric', month: 'long', day: 'numeric'};
-
-//     // Format the date using toLocaleDateString
-//     return date.toLocaleDateString('en-US', options);
-//   }
-
-//   // Sort experiences by createdAt (newest first)
-//   const sortedCertificate = [...certificates].sort((a, b) => {
-//     return new Date(b.createdAt) - new Date(a.createdAt);
-//   });
-
-//   return sortedCertificate.map((certificate, index) => {
-//     const {issueDate, certificate_name, firmName, certificate_number} =
-//       certificate;
-
-//     // Format the dates
-
-//     return (
-//       <View key={index} style={styles.experienceItem}>
-//         <Text style={styles.experiencePeriod}>
-//           Issue Date: {formatDate(issueDate)}
-//         </Text>
-
-//         <Text style={styles.experienceTitle}>{certificate_name}</Text>
-//         <Text style={styles.experienceDetail}>
-//           Certificate Number: {certificate_number}
-//         </Text>
-//         <Text style={styles.experienceDetail}>Issued by: {firmName}</Text>
-//       </View>
-//     );
-//   });
-// };
 
 const renderCertificate = (
   certificates,
   navigation,
   openDeleteModalCertificate,
-  dropdownVisibleCertificate, setDropdownVisibleCertificate,toggleDropdownCertificate
+  dropdownVisibleCertificate,
+  setDropdownVisibleCertificate,
+  toggleDropdownCertificate,
 ) => {
-
   if (!certificates || certificates.length === 0) {
     return <Text style={styles.noExperienceMessage}>No certificate added</Text>;
   }
@@ -1659,66 +1719,72 @@ const renderCertificate = (
     const {_id, issueDate, certificate_name, firmName, certificate_number} =
       certificate;
 
+    const handleOutsidePress = () => {
+      // Close the dropdown when tapped outside
+      setDropdownVisibleCertificate(null);
+    };
+
     return (
-      <View key={_id} style={styles.experienceItem}>
-        <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-          <Text style={styles.experiencePeriod}>
-            Issue Date: {formatDate(issueDate)}
-          </Text>
-          <View style={{flexDirection: 'row'}}>
-            <TouchableOpacity onPress={() => toggleDropdownCertificate(index)}>
-              <Image
-                source={require('../../../assets/images/3dots.png')}
-                style={{width: 22, height: 22}}
-              />
-            </TouchableOpacity>
-            {dropdownVisibleCertificate === index && (
-              <View style={styles.dropdown}>
-                <TouchableOpacity
-                  // style={{marginRight: 5}}
-                  // onPress={() => navigation.navigate('EditCertificate', {id: _id})}
-                  style={styles.dropdownOption}
-                  onPress={() => {
-                    setDropdownVisibleCertificate(null);
-                    navigation.navigate('EditCertificate', {id: _id});
-                  }}>
-                  <Image
-                    source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
-                    style={{width: 22, height: 22}}
-                  />
-                </TouchableOpacity>
+      <TouchableWithoutFeedback onPress={handleOutsidePress}>
+        <View key={_id} style={styles.experienceItem}>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+            <Text style={styles.experiencePeriod}>
+              Issue Date: {formatDate(issueDate)}
+            </Text>
+            <View style={{flexDirection: 'row'}}>
+              <TouchableOpacity
+                onPress={() => toggleDropdownCertificate(index)}>
+                <Image
+                  source={require('../../../assets/images/3dots.png')}
+                  style={{width: 22, height: 22}}
+                />
+              </TouchableOpacity>
+              {dropdownVisibleCertificate === index && (
+                <View style={styles.dropdown}>
+                  <TouchableOpacity
+                    // style={{marginRight: 5}}
+                    // onPress={() => navigation.navigate('EditCertificate', {id: _id})}
+                    style={styles.dropdownOption}
+                    onPress={() => {
+                      setDropdownVisibleCertificate(null);
+                      navigation.navigate('EditCertificate', {id: _id});
+                    }}>
+                    <Image
+                      source={require('../../../assets/images/icons/edit.png')} // Path to the profile image
+                      style={{width: 22, height: 22}}
+                    />
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  // onPress={() => openDeleteModalCertificate(_id)}
-                  style={styles.dropdownOption}
-                  onPress={() => {
-                    setDropdownVisibleCertificate(null);
-                    openDeleteModalCertificate(_id);
-                  }}>
-                  <Image
-                    source={require('../../../assets/images/icons/trash.png')} // Path to the profile image
-                    style={{width: 22, height: 22}}
-                  />
-                </TouchableOpacity>
-              </View>
-            )}
+                  <TouchableOpacity
+                    style={styles.dropdownOption}
+                    onPress={() => {
+                      setDropdownVisibleCertificate(null);
+                      openDeleteModalCertificate(_id);
+                    }}>
+                    <Image
+                      source={require('../../../assets/images/icons/trash.png')} // Path to the profile image
+                      style={{width: 22, height: 22}}
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </View>
+
+          <Text style={styles.experienceTitle}>{certificate_name}</Text>
+          <Text style={styles.experienceDetail}>
+            Certificate Number: {certificate_number}
+          </Text>
+
+          <Text style={styles.experienceDetail}>Issued by: {firmName}</Text>
         </View>
-
-        <Text style={styles.experienceTitle}>{certificate_name}</Text>
-        <Text style={styles.experienceDetail}>
-          Certificate Number: {certificate_number}
-        </Text>
-
-        <Text style={styles.experienceDetail}>Issued by: {firmName}</Text>
-      </View>
+      </TouchableWithoutFeedback>
     );
   });
 };
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor: '#F9F9F9',
   },
   backButton: {
     position: 'absolute',
@@ -1731,6 +1797,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingBottom: hp('5%'),
+    paddingTop: hp('4.5%'),
   },
   backButton: {
     position: 'absolute',
@@ -1765,7 +1832,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   ratingText: {
-    // marginLeft: 2,
+    marginTop: hp(3),
     fontFamily: 'Poppins',
     fontSize: 12,
     color: '#fff',
@@ -1784,11 +1851,11 @@ const styles = StyleSheet.create({
   },
   starsContainer: {
     flexDirection: 'row',
-    marginRight: 5, // Adjust as needed
+    marginRight: 5,
   },
   starImage: {
-    width: 18, // Adjust to your image size
-    height: 18, // Adjust to your image size
+    width: 18,
+    height: 18,
     marginRight: 2,
   },
   infoContainer: {
@@ -1798,6 +1865,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: wp('5%'),
     flexDirection: 'row',
     justifyContent: 'space-between',
+    maxWidth: wp('100%'),
   },
   name: {
     fontSize: wp('6.5%'),
@@ -1878,7 +1946,6 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: '#1262D2',
     width: '100%',
-    // marginTop: 5,
   },
   inactiveUnderline: {
     height: 2,
@@ -1892,7 +1959,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    // fontWeight: 'bold',
     fontFamily: 'Poppins SemiBold',
     color: '#294776',
     marginBottom: hp('1%'),
@@ -1913,16 +1979,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
     color: '#000',
     fontWeight: '400',
-    // flexBasis: '30%', // Take up roughly a third of the row
-    // overflow: 'hidden', // Hide overflow text
-    // textOverflow: 'ellipsis', // Use ellipsis for overflow text
-    // whiteSpace: 'nowrap',
     textAlign: 'center',
   },
   practiceAreaRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap', // Allow items to wrap to the next line if needed
-    justifyContent: 'flex-start', // Align items to the start
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
   },
 
   detailItem: {
@@ -1932,7 +1994,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: wp('3.5%'),
-    fontFamily: 'Poppins',
+    fontFamily: 'Poppins SemiBold',
     color: '#294776',
     fontWeight: '400',
   },
@@ -1957,7 +2019,7 @@ const styles = StyleSheet.create({
   experiencePeriod: {
     fontSize: wp('4%'),
     color: '#000',
-    fontFamily: 'Poppins SemiBold',
+    fontFamily: 'Poppins',
     width: wp('70%'),
     marginVertical: 5,
   },
@@ -1968,8 +2030,8 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   profileContainer: {
-    position: 'relative', // To allow absolute positioning of the edit button
-    width: 100, // Adjust to fit your layout
+    position: 'relative', 
+    width: 100,
     height: 100,
     marginRight: wp('20%'),
   },
@@ -1978,7 +2040,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: -8,
     bottom: 5,
-    backgroundColor: '#00000080', // Semi-transparent background for visibility
+    backgroundColor: '#fff', 
     borderRadius: 12,
     padding: 4,
   },
@@ -2027,7 +2089,6 @@ const styles = StyleSheet.create({
   },
   deleteTitle: {
     fontSize: 18,
-    // fontWeight: 'bold',
     marginBottom: 10,
     fontFamily: 'Poppins SemiBold',
   },

@@ -4,11 +4,11 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  // Dimensions,
+  StatusBar,
   Alert,
   Image,
   BackHandler,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import {Formik} from 'formik';
 import LinearGradient from 'react-native-linear-gradient';
@@ -22,16 +22,13 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import {useFocusEffect} from '@react-navigation/native';
 import DocumentPicker from 'react-native-document-picker';
 import CustomTextInput from '../../../shared/CustomTextInput';
-import CustomButton from '../../../shared/CustomButton';
 import {useVerifyAdvocateMutation} from '../../redux/api/api';
 import navigationStrings from '../../constants/navigationStrings';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import CustomHeader from '../../../shared/CustomHeader';
 
-// const {height: screenHeight} = Dimensions.get('window');
 const validationSchema = Yup.object().shape({
-  barCouncilId: Yup.string()
-    .required('Bar Council ID is required'),
+  barCouncilId: Yup.string().required('Bar Council ID is required'),
   selectedFile: Yup.mixed().required('Council ID image is required'),
   licenseIssueDate: Yup.date().required('License issue date is required'), // New line for date validation
 });
@@ -146,11 +143,16 @@ const VerifyAdvocate = ({navigation}) => {
   };
   return (
     <>
-      <CustomHeader
-        title={'Verify Advocate'}
-        icon={require('../../../assets/images/back.png')}
+      <StatusBar
+        barStyle="dark-content" // Options: 'default', 'light-content', 'dark-content'
+        backgroundColor="#F3F7FF" // Background color for Android
       />
+
       <View style={styles.container}>
+        <CustomHeader
+          title={'Verify Advocate'}
+          // icon={require('../../../assets/images/back.png')}
+        />
         <Formik
           initialValues={{
             barCouncilId: '',
@@ -234,9 +236,6 @@ const VerifyAdvocate = ({navigation}) => {
                           source={{uri: selectedFile.uri}}
                           style={styles.imagePreview}
                         />
-                        {/* <Text style={styles.fileUploadText}>
-                      {selectedFile[0].name}
-                    </Text>  */}
                       </View>
                     ) : (
                       <View style={styles.imagePreviewContainer}>
@@ -260,12 +259,12 @@ const VerifyAdvocate = ({navigation}) => {
                 )}
                 <View
                   style={{
-                    marginTop:
+                    marginVertical:
                       touched.selectedFile && errors.selectedFile
-                        ? null
-                        : hp('5%'),
+                        ? hp('2%')
+                        : hp('4%'),
                     flexDirection: 'row',
-                    justifyContent:'space-between'
+                    justifyContent: 'space-between',
                   }}>
                   <TouchableOpacity
                     style={styles.skipButton} // Add style for the skip button
@@ -275,11 +274,7 @@ const VerifyAdvocate = ({navigation}) => {
                   >
                     <Text style={styles.skipButtonText}>Skip</Text>
                   </TouchableOpacity>
-                  {/* <CustomButton
-                  title="Save"
-                  onPress={handleSubmit}
-                  loading={isLoading}
-                /> */}
+
                   <TouchableOpacity
                     style={styles.buttonWrapper}
                     onPress={handleSubmit}
@@ -297,7 +292,7 @@ const VerifyAdvocate = ({navigation}) => {
                             style={styles.loader}
                           />
                         )}
-                        <Text style={styles.buttonText1}>{"Save & Next"}</Text>
+                        <Text style={styles.buttonText1}>{'Save & Next'}</Text>
                       </View>
                     </LinearGradient>
                   </TouchableOpacity>
@@ -316,8 +311,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: wp('5%'),
     backgroundColor: '#F3F7FF',
+    paddingTop: hp('4.5%'),
   },
-
   title: {
     fontSize: wp('4%'),
     marginVertical: 15,
@@ -370,11 +365,9 @@ const styles = StyleSheet.create({
     marginBottom: hp('5%'),
   },
   imagePreview: {
-    // width: 100,
     width: wp('90%'),
     height: hp('20%'),
     resizeMode: 'cover',
-    // marginBottom: hp('1%'),
     borderRadius: wp('1.5%'),
   },
   dummyImage: {
@@ -388,7 +381,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: hp('5%'),
-    width: wp('46%'),
+    width: wp('43%'),
     borderWidth: 1,
     borderColor: '#17316D',
     borderRadius: wp('2%'),
@@ -405,11 +398,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins',
   },
   customButton: {
-    backgroundColor: '#fff', // Customize the button color
+    borderWidth: 1,
+    borderColor: '#ccc',
     padding: 10,
-    borderRadius: wp('2%'),
-    width: wp('90%'),
-    marginBottom: hp('2%'),
+    borderRadius: 10,
+    backgroundColor: '#FFF',
     fontFamily: 'Poppins',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
@@ -427,10 +420,11 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: hp('1.5%'),
   },
+
   buttonWrapper: {
     borderRadius: wp('2%'),
     overflow: 'hidden',
-    width: '46%',
+    width: wp('43%'),
     marginTop: hp('5%'),
   },
   button: {
@@ -440,7 +434,7 @@ const styles = StyleSheet.create({
   },
   buttonContent: {
     flexDirection: 'row', // Align children horizontally
-    alignItems: 'center',  // Center the items vertically
+    alignItems: 'center', // Center the items vertically
   },
   buttonText1: {
     color: '#fff',

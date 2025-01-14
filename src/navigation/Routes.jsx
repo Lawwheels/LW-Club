@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {View, ActivityIndicator} from 'react-native';
+import {View, ActivityIndicator,SafeAreaView,StyleSheet,Platform,StatusBar} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
@@ -47,16 +47,61 @@ import ContactUs from '../components/common/ContactUs';
 import AboutUs from '../components/common/AboutUs';
 import HelpSupport from '../components/common/HelpSupport';
 import ViewSkill from '../components/advocate/EditProfileSection/EditSkill/ViewSkill';
+import Reviews from '../components/advocate/Reviews';
+import UserHome from '../components/user/UserHome';
+import Chat from '../components/user/chat/Chat';
+import ChatConversation from '../components/user/chat/ChatConversation';
+import AllUserRequest from '../components/advocate/AllUserRequest';
+import AdvocateChat from '../components/advocate/chat/AdvocateChat';
+import AdvocateChatConversation from '../components/advocate/chat/AdvocateChatConversation';
+import AdvocateSearch from '../components/advocate/search/AdvocateSearch';
+import ViewAllUsers from '../components/advocate/search/ViewAllUsers';
+import ParticularUser from '../components/advocate/search/ParticularUser';
+import Following from '../components/user/follow/Following';
+import AdvocateFollowing from '../components/user/follow/AdvocateFollowing';
+import AdvocateFollower from '../components/user/follow/AdvocateFollower';
+import {navigationRef} from '../navigation/navigationRef';
+import StudentNavigator from './StudentNavigator';
+import LegalUpdate from '../components/student/home/LegalUpdate';
+import Articles from '../components/student/home/Articles';
+import Preamble from '../components/student/corners/cornersPage/constitutionPage/Preamble';
+import StudentArticle from '../components/student/corners/cornersPage/constitutionPage/StudentArticle';
+import BareAct from '../components/student/corners/cornersPage/constitutionPage/BareAct';
+import Blogs from '../components/student/corners/cornersPage/Blogs';
+import StudentAdvocateProfile from '../components/student/home/StudentAdvocateProfile';
+import ViewAllUserList from '../components/student/search/ViewAllUserList';
+import ViewStudentProfile from '../components/student/profile/ViewStudentProfile';
+import StudentBio from '../components/student/profile/StudentBio';
+import StudentEducation from '../components/student/education/StudentEducation';
+import EditStudentEducation from '../components/student/education/EditStudentEducation';
+import AddStudentSkill from '../components/student/skill/AddStudentSkill';
+import ViewStudentSkill from '../components/student/skill/ViewStudentSkill';
+import AddStudentCertificate from '../components/student/certificate/AddStudentCertificate';
+import EditStudentCertificate from '../components/student/certificate/EditStudentCertificate';
+import AdvocateBooking from '../components/student/booking/AdvocateBooking';
+import BookingView from '../components/student/booking/BookingView';
+import SearchAllAdvocateList from '../components/user/SearchAllAdvocateList';
+import StudentNotification from '../components/student/notification/StudentNotification';
+import StudentChatConversation from '../components/student/chat/StudentChatConversation';
+import StudentChat from '../components/student/chat/StudentChat';
+import StudentAdvocateFollower from '../components/student/follow/StudentAdvocateFollower';
+import StudentAdvocateFollowing from '../components/student/follow/StudentAdvocateFollowing';
+import FeedbackAdvocate from '../components/student/feedback/FeedbackAdvocate';
+import MyFollowers from '../components/advocate/follow/MyFollowers';
+import MyFollowings from '../components/advocate/follow/MyFollowings';
+import StudentFollower from '../components/student/follow/StudentFollower';
+import StudentFollowing from '../components/student/follow/StudentFollowing';
 
 const Stack = createNativeStackNavigator();
 export default function Routes() {
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(true);
   const [authToken, setAuthToken] = useState(null);
+  const [refreshToken,setRefreshToken]=useState(null);
   const [role, setRole] = useState(null);
-  // const {authToken} = useSelector(state => state.auth);
   const [isFirstTimeLoad, setIsFirstTimeLoad] = useState(null);
-  // const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const extraPadding = Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0;
 
   useEffect(() => {
     AsyncStorage.getItem('alreadyLaunched').then(value => {
@@ -69,18 +114,10 @@ export default function Routes() {
     });
   }, []);
 
-  // useEffect(() => {
-  //   getData();
-  // }, []);
-
-  // async function getData() {
-  //   const data = await AsyncStorage.getItem("isLoggedIn");
-  //   setIsLoggedIn(data === "true");
-  // }
-
   useEffect(() => {
     const checkAuth = async () => {
       const token = await AsyncStorage.getItem('authToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
       const userRole = await AsyncStorage.getItem('role');
       // const token = await AsyncStorage.removeItem('authToken');
       // const tokens = await AsyncStorage.removeItem('role');
@@ -89,6 +126,7 @@ export default function Routes() {
 
       setRole(userRole);
       setAuthToken(token);
+      // setRefreshToken(refreshToken);
       setIsLoading(false);
     };
 
@@ -104,59 +142,60 @@ export default function Routes() {
   }
 
   return (
-    <NavigationContainer>
+    // <SafeAreaView style={[styles.safeArea , {paddingTop: extraPadding}]}>
+    <SafeAreaView style={styles.safeArea}>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator>
-        {authToken ? (
-          <>
-            <Stack.Screen
-              name="appStack"
-              component={AppStack}
-              options={{headerShown: false}}
-              initialParams={{role: role}} // Pass role to AppStack
-            />
-          </>
-        ) : (
-          <>
-            {isFirstTimeLoad && (
-              <Stack.Screen
-                name="OnBoardingScreen"
-                component={OnBoardingScreen}
-                options={{headerShown: false}}
-              />
-            )}
-
-            <Stack.Screen
-              name="authStack"
-              component={AuthStack}
-              options={{headerShown: false}}
-            />
-            <Stack.Screen
-              name="appStack"
-              component={AppStack}
-              options={{headerShown: false}}
-              initialParams={{role: role}} // Pass role to AppStack
-            />
-          </>
+        {authToken && (
+          <Stack.Screen
+            name="appStack"
+            component={AppStack}
+            options={{headerShown: false}}
+            initialParams={{role: role}}
+          />
         )}
+        {isFirstTimeLoad && (
+          <Stack.Screen
+            name="OnBoardingScreen"
+            component={OnBoardingScreen}
+            options={{headerShown: false}}
+          />
+        )}
+        <Stack.Screen
+          name="authStack"
+          component={AuthStack}
+          options={{headerShown: false}}
+          initialParams={{role: role}}
+        />
       </Stack.Navigator>
     </NavigationContainer>
+    </SafeAreaView>
   );
 }
 
-const AuthStack = () => {
+const AuthStack = ({route}) => {
+  const role = route?.params?.role;
+  console.log('role123' + role);
   return (
     <Stack.Navigator screenOptions={{headerShown: false}}>
       <>
         <Stack.Screen name={navigationStrings.LOGIN} component={Login} />
+       
         <Stack.Screen
           name={navigationStrings.OTP_SCREEN}
           component={OtpScreen}
         />
         <Stack.Screen name={navigationStrings.REGISTER} component={Register} />
-
         <Stack.Screen
           name={navigationStrings.ROLE_SELECT}
           component={RoleSelect}
+        />
+        
+        <Stack.Screen
+          name="appStack"
+          component={AppStack}
+          options={{headerShown: false}}
+          initialParams={{role: role}} // Pass role to AppStack
         />
       </>
     </Stack.Navigator>
@@ -234,9 +273,24 @@ const AppStack = ({route}) => {
           <Stack.Screen name={'AddExperience'} component={AddExperience} />
           <Stack.Screen name={'AddCertificate'} component={AddCertificate} />
           <Stack.Screen name={'AddSkill'} component={AddSkill} />
+          <Stack.Screen name={'ViewSkill'} component={ViewSkill} />
+          <Stack.Screen name={'AdvocateReviews'} component={Reviews} />
+          <Stack.Screen name={'AllUserRequest'} component={AllUserRequest} />
+          <Stack.Screen name={'AdvocateSearch'} component={AdvocateSearch} />
+          <Stack.Screen name={'AdvocateChat'} component={AdvocateChat} />
+          <Stack.Screen name={'ViewAllUsers'} component={ViewAllUsers} />
+          <Stack.Screen name={'ParticularUser'} component={ParticularUser} />
           <Stack.Screen
-            name={"ViewSkill"}
-            component={ViewSkill}
+            name={'AdvocateChatConversation'}
+            component={AdvocateChatConversation}
+          />
+          <Stack.Screen
+            name={'MyFollowers'}
+            component={MyFollowers}
+          />
+           <Stack.Screen
+            name={'MyFollowings'}
+            component={MyFollowings}
           />
         </>
       )}
@@ -275,6 +329,60 @@ const AppStack = ({route}) => {
             name={navigationStrings.ADVOCATE_DETAIL_PROFILE}
             component={AdvocateDetailProfile}
           />
+          <Stack.Screen name={'UserHome'} component={UserHome} />
+          <Stack.Screen name={'UserChat'} component={Chat} />
+          <Stack.Screen
+            name={'ChatConversation'}
+            component={ChatConversation}
+          />
+           <Stack.Screen
+            name={"UserFollowing"}
+            component={Following}
+          />
+          <Stack.Screen
+            name={"Following"}
+            component={AdvocateFollowing}
+          />
+            <Stack.Screen
+            name={"Follower"}
+            component={AdvocateFollower}
+          />
+           <Stack.Screen name={'SearchAllAdvocateList'} component={SearchAllAdvocateList} /> 
+        </>
+      )} 
+      {role === 'Student' && (
+        <>
+        <Stack.Screen name={'StudentNavigator'} component={StudentNavigator} /> 
+        <Stack.Screen name={'LegalUpdate'} component={LegalUpdate} /> 
+        <Stack.Screen name={'Articles'} component={Articles} /> 
+        <Stack.Screen name={'StudentBio'} component={StudentBio} /> 
+        <Stack.Screen name={'Preamble'} component={Preamble} /> 
+        <Stack.Screen name={'StudentArticle'} component={StudentArticle} /> 
+        <Stack.Screen name={'StudentAdvocateProfile'} component={StudentAdvocateProfile} /> 
+        <Stack.Screen name={'ViewAllUserList'} component={ViewAllUserList} /> 
+        <Stack.Screen name={'ViewStudentProfile'} component={ViewStudentProfile} /> 
+        <Stack.Screen name={'StudentEducation'} component={StudentEducation} /> 
+        <Stack.Screen name={'EditStudentEducation'} component={EditStudentEducation} /> 
+        <Stack.Screen name={'AddStudentSkill'} component={AddStudentSkill} /> 
+        <Stack.Screen name={'ViewStudentSkill'} component={ViewStudentSkill} /> 
+        <Stack.Screen name={'AddStudentCertificate'} component={AddStudentCertificate} /> 
+        <Stack.Screen name={'EditStudentCertificate'} component={EditStudentCertificate} /> 
+        <Stack.Screen name={'AdvocateBooking'} component={AdvocateBooking} /> 
+        <Stack.Screen name={'BookingView'} component={BookingView} /> 
+        <Stack.Screen name={'StudentNotification'} component={StudentNotification} /> 
+        <Stack.Screen name={'StudentChat'} component={StudentChat} /> 
+        <Stack.Screen name={'StudentChatConversation'} component={StudentChatConversation} /> 
+        <Stack.Screen name={'StudentAdvocateFollower'} component={StudentAdvocateFollower} /> 
+        <Stack.Screen name={'StudentAdvocateFollowing'} component={StudentAdvocateFollowing} /> 
+        <Stack.Screen name={'FeedbackAdvocate'} component={FeedbackAdvocate} /> 
+        <Stack.Screen
+            name={'StudentFollowers'}
+            component={StudentFollower}
+          />
+           <Stack.Screen
+            name={'StudentFollowings'}
+            component={StudentFollowing}
+          />
         </>
       )}
       <Stack.Screen name={'PrivacyPolicy'} component={PrivacyPolicy} />
@@ -284,3 +392,10 @@ const AppStack = ({route}) => {
     </Stack.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F3F7FF', 
+  },
+});

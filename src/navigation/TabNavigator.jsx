@@ -3,9 +3,10 @@ import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {Image} from 'react-native';
 import HomeIcon from '../../assets/images/icons/tabIcon/home.png';
 import CalendarIcon from '../../assets/images/icons/tabIcon/calendar.png';
-// import SearchActive from '../../assets/images/icons/tabIcon/searchActive.png';
+
 import ProfileIcon from '../../assets/images/icons/tabIcon/profile.png';
-// import SearchIcon from '../../assets/images/icons/tabIcon/searchIcon.png';
+import SearchIcon from '../../assets/images/icons/tabIcon/searchIcon.png';
+import ActiveSearch from '../../assets/images/icons/tabIcon/searchActive.png';
 import NotificationIcon  from '../../assets/images/icons/tabIcon/notification.png';
 import ActiveNotification  from '../../assets/images/icons/tabIcon/ActiveNotification.png';
 import ActiveHome from '../../assets/images/icons/tabIcon/activeHome.png';
@@ -22,6 +23,7 @@ import Account from '../components/advocate/Account';
 // import WatchUI from '../components/advocate/WatchUI';
 import Search from '../components/user/Search';
 import { Notification } from '../screen';
+import AdvocateSearch from '../components/advocate/search/AdvocateSearch';
 
 
 const Tab = createBottomTabNavigator();
@@ -105,9 +107,9 @@ const TabNavigator = () => {
         }}
       />
 
-      {/* <Tab.Screen
+      <Tab.Screen
         name="Search"
-        component={Search}
+        component={AdvocateSearch}
         options={{
           headerShown: false,
           tabBarLabelStyle: {
@@ -121,7 +123,7 @@ const TabNavigator = () => {
 
           tabBarIcon: ({focused}) => (
             <Image
-              source={focused ? SearchActive : SearchIcon}
+            source={focused ? ActiveSearch : SearchIcon}
               style={{
                 width: 26,
                 height: 26,
@@ -133,9 +135,9 @@ const TabNavigator = () => {
             />
           ),
         }}
-      /> */}
+      />
 
-      <Tab.Screen
+      {/* <Tab.Screen
         name="Notification"
         component={Notification}
         options={{
@@ -163,7 +165,7 @@ const TabNavigator = () => {
             />
           ),
         }}
-      />
+      /> */}
 
       <Tab.Screen
         name="Profile"

@@ -28,10 +28,14 @@ import {
   useGetUserAdvocateByIdQuery,
   useSloteForUserQuery,
 } from '../../redux/api/api';
+import StarRating from '../../../shared/StarRating';
+import { useNavigation } from '@react-navigation/native';
+import { handleError } from '../../../shared/authUtils';
 
 const {width} = Dimensions.get('window');
 
 const BookConsultation = ({route}) => {
+  const navigation=useNavigation();
   const {id} = route?.params || {};
   const [selectedMethod, setSelectedMethod] = useState([]);
   const [selectedTime, setSelectedTime] = useState(null);
@@ -47,23 +51,69 @@ const BookConsultation = ({route}) => {
     moment(today).diff(moment(today).startOf('month'), 'weeks'),
   ); // Current week in the month
 
-  console.log(id);
+  
 
   const formattedDate = new Date(value).toLocaleDateString('en-CA');
   const {data, isLoading, error} = useGetUserAdvocateByIdQuery(id);
-  const {data: slotData} = useSloteForUserQuery({
+  if (!id) {
+    console.error("Advocate ID is not available. Skipping API call.");
+  } else {
+   
+  }
+  const {data: slotData,isLoading:loadingSlot,error:errorSlot} = useSloteForUserQuery({
     advocate: id,
     date: formattedDate,
+    skip:!id
   });
   const [bookingSlot] = useBookingSlotMutation();
   // Assuming `slotData` is already fetched and contains the data as per your log
   const times = slotData?.data?.flatMap(slot => slot.slotes) || [];
 
-  console.log('slot', times);
+  // const weeks = React.useMemo(() => {
+  //   const start = moment(month) // Ensure month is a moment object
+  //     .startOf('month')
+  //     .add(week, 'weeks')
+  //     .startOf('week');
+
+  //   return [-1, 0, 1].map(adj => {
+  //     return Array.from({length: 7}).map((_, index) => {
+  //       const date = moment(start).add(adj, 'week').add(index, 'day');
+  //       return {
+  //         weekday: date.format('ddd'), // Format weekday
+  //         date: date.toDate(), // Convert back to native Date object for comparison later
+  //       };
+  //     });
+  //   });
+  // }, [week, month]);
+
+  const weeks = React.useMemo(() => {
+    const start = moment(month) // Ensure month is a moment object
+      .startOf('month')
+      .add(week, 'weeks')
+      .startOf('week');
+  
+    return [-1, 0, 1].map(adj => {
+      return Array.from({ length: 7 }).map((_, index) => {
+        const date = moment(start).add(adj, 'week').add(index, 'day');
+        return {
+          weekday: date.format('ddd'), // Format weekday
+          date: date.toDate(), // Convert back to native Date object for comparison later
+          isDisabled: date.isBefore(today, 'day'), // Disable past dates
+        };
+      });
+    });
+  }, [week, month]);
+  
+  useEffect(() => {
+    // Scroll to the current week on initial render
+    if (swiper.current) {
+      swiper.current.scrollTo(1, false);
+    }
+  }, []);
 
   // console.log('userAdvocate', data);
-  const advocateDetails = data?.data[0];
-  if (isLoading) {
+  const advocateDetails = data?.data;
+  if (isLoading || loadingSlot || !data) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -72,9 +122,11 @@ const BookConsultation = ({route}) => {
   }
 
   // Handle error state
-  if (error) {
+  if (error || errorSlot) {
     console.log(error);
-    return <Text>An error occurred: {error.message}</Text>;
+    console.log("errorSlot",errorSlot)
+    handleError(error);
+    // return <Text>An error occurred: {error?.message}</Text>;
   }
 
   const renderServiceTypeButtons = () => {
@@ -136,29 +188,7 @@ const BookConsultation = ({route}) => {
         return null;
     }
   };
-  const weeks = React.useMemo(() => {
-    const start = moment(month) // Ensure month is a moment object
-      .startOf('month')
-      .add(week, 'weeks')
-      .startOf('week');
 
-    return [-1, 0, 1].map(adj => {
-      return Array.from({length: 7}).map((_, index) => {
-        const date = moment(start).add(adj, 'week').add(index, 'day');
-        return {
-          weekday: date.format('ddd'), // Format weekday
-          date: date.toDate(), // Convert back to native Date object for comparison later
-        };
-      });
-    });
-  }, [week, month]);
-
-  useEffect(() => {
-    // Scroll to the current week on initial render
-    if (swiper.current) {
-      swiper.current.scrollTo(1, false);
-    }
-  }, []);
 
   const handleMonthChange = direction => {
     const newMonth = moment(month).add(direction, 'months'); // Use moment to add months
@@ -247,6 +277,7 @@ const BookConsultation = ({route}) => {
           titleStyle: {fontFamily: 'Poppins SemiBold'},
           textStyle: {fontFamily: 'Poppins'},
         });
+        navigation.navigate("UserHome");
       } else {
         const errorMsg =
           response.error?.data?.message || 'Something went wrong!';
@@ -279,7 +310,7 @@ const BookConsultation = ({route}) => {
       {/* Header Section */}
       <CustomHeader
         title={'Book Your Consultation'}
-        icon={require('../../../assets/images/back.png')}
+        icon={require('../../../assets/images/backImage.png')}
       />
       <ScrollView
         showsVerticalScrollIndicator={false} // Disable horizontal scroll indicator
@@ -288,7 +319,7 @@ const BookConsultation = ({route}) => {
         <View style={styles.profileSection}>
           <Image
             source={
-              advocateDetails.profilePic?.url
+              advocateDetails?.profilePic?.url
                 ? {uri: advocateDetails.profilePic.url}
                 : require('../../../assets/images/avatar.png')
             }
@@ -302,15 +333,10 @@ const BookConsultation = ({route}) => {
             {/* <View style={styles.rating}> */}
             <View style={styles.starRating}>
               <View style={styles.starsContainer}>
-                {[...Array(5)].map((_, index) => (
-                  <Image
-                    key={index}
-                    source={require('../../../assets/images/star.png')}
-                    style={styles.starImage}
-                  />
-                ))}
+              <StarRating rating={advocateDetails?.averageRating || 0} starSize={18} />
+               
               </View>
-              <Text style={styles.ratingText}>5/5</Text>
+              <Text style={styles.ratingText}>{advocateDetails?.averageRating || 0}/5</Text>
             </View>
 
             {/* </View> */}

@@ -18,6 +18,7 @@ import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {useDeletePracticeAreaMutation, useGetAdvocateQuery} from '../../../../redux/api/api';
 import navigationStrings from '../../../../constants/navigationStrings';
 import CustomDeleteModal from '../../../../../shared/CustomDeleteModal';
+import { handleError } from '../../../../../shared/authUtils';
 
 const ViewAllPracticeArea = () => {
   const navigation = useNavigation();
@@ -36,10 +37,11 @@ const ViewAllPracticeArea = () => {
 
   // Handle error state
   if (error) {
+    handleError(error);
     console.log(error);
     // Show the flash message
     showMessage({
-      message: `An error occurred: ${error.message}`,
+      message: `An error occurred: ${error?.message}`,
       type: 'danger',
       titleStyle: {fontFamily: 'Poppins'},
       style: {backgroundColor: 'red'},

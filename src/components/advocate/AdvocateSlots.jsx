@@ -242,7 +242,7 @@ const AdvocateSlots = () => {
         <ActivityIndicator size="large" color="#0000ff" />
       ) : error ? (
         <Text style={styles.errorText}>
-          Error fetching data: {error.message}
+          Error fetching data: {error?.message}
         </Text>
       ) : (
         <FlatList

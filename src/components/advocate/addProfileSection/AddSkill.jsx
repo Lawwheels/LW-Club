@@ -340,7 +340,7 @@ const skillValidationSchema = Yup.object().shape({
 });
 
 const AddSkill = ({navigation}) => {
-  const [advocateSkill, {isLoading: skillLoading}] = useAdvocateSkillMutation();
+  const [advocateSkill] = useAdvocateSkillMutation();
 
   return (
     <>
@@ -357,8 +357,9 @@ const AddSkill = ({navigation}) => {
               skillName: '',
             }}
             validationSchema={skillValidationSchema}
-            onSubmit={async (values, {resetForm}) => {
+            onSubmit={async (values, {setSubmitting,resetForm}) => {
               try {
+                setSubmitting(true);
                 const response = await advocateSkill(values);
                 console.log('API Response:', response);
 
@@ -373,6 +374,7 @@ const AddSkill = ({navigation}) => {
                     textStyle: {fontFamily: 'Poppins'},
                   });
                   resetForm(); // Clear the form after successful submission
+                  navigation.navigate("ViewAdvocateProfile")
                 } else {
                   const errorMsg =
                     response.error?.data?.message || 'Something went wrong!';
@@ -388,10 +390,16 @@ const AddSkill = ({navigation}) => {
                 }
               } catch (error) {
                 console.error('Error:', error);
-                Alert.alert(
-                  'Error',
-                  'An unexpected error occurred. Please try again.',
-                );
+                const errorMsg =
+                error?.response?.data?.error?.data?.message ||
+                'Something went wrong!';
+              showMessage({
+                message: 'Error',
+                description: errorMsg,
+                type: 'danger',
+                titleStyle: {fontFamily: 'Poppins SemiBold'},
+                textStyle: {fontFamily: 'Poppins'},
+              });
               }
             }}>
             {({
@@ -400,14 +408,16 @@ const AddSkill = ({navigation}) => {
               setFieldValue,
               errors,
               touched,
+              handleBlur,
               isSubmitting,
             }) => (
               <View>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Skill</Text>
+                  <Text style={styles.inputLabel}>Skill<Text style={{ color: 'red' }}> *</Text></Text>
                   <TextInput
                     placeholder="Enter Skill"
                     style={styles.input}
+                    onBlur={() => handleBlur('skillName')}
                     value={values.skillName}
                     onChangeText={value => setFieldValue('skillName', value)}
                   />
@@ -419,7 +429,7 @@ const AddSkill = ({navigation}) => {
                 <CustomButton
                   title="Save"
                   onPress={handleSubmit}
-                  loading={skillLoading}
+                  loading={isSubmitting}
                 />
               </View>
             )}

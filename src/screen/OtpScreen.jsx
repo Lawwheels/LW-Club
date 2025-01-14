@@ -62,13 +62,15 @@ const OtpScreen = ({navigation, route}) => {
     onSubmit: async values => {
       try {
         const res = await verifyOtp({mobileNumber, otp: values.otp});
-        console.log(res);
+        console.log("otp",res);
         const authToken = res?.data?.AccessToken;
+        const refreshToken = res?.data?.refreshToken;
         let role = res?.data?.user?.role;
         console.log(role);
         // console.log(authToken)
         if (res && res?.data?.success) {
           await AsyncStorage.setItem('authToken', authToken);
+          await AsyncStorage.setItem('refreshToken', refreshToken);
           dispatch(
             setUser({
               user: {token: authToken}, // Assuming user data contains token
@@ -276,7 +278,7 @@ const OtpScreen = ({navigation, route}) => {
                 loading={isLoading}
               />
 
-              {error && <Text style={styles.errorText}>{error.message}</Text>}
+              {error && <Text style={styles.errorText}>{error?.message}</Text>}
             </View>
 
             {/* Resend Section */}
@@ -297,7 +299,7 @@ const OtpScreen = ({navigation, route}) => {
                       styles.resendLink,
                       {
                         color:
-                          showTimer || resendAttempts >= 3 ? 'gray' : '#000',
+                          showTimer || resendAttempts >= 3 ? 'gray' : '#1262D2',
                       },
                     ]}>
                     {showTimer

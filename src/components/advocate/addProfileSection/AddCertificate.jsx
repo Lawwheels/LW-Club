@@ -43,289 +43,6 @@ export default AddCertificate = ({navigation}) => {
       <KeyboardAwareScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}>
-        {/* <Formik
-          initialValues={{
-            certificates: [
-              {
-                firmName: '',
-                certificate_number: '',
-                certificate_name: '',
-                issueDate: null,
-              },
-            ],
-          }}
-          // validationSchema={validationExperience}
-          onSubmit={(values, {setSubmitting}) => {
-            console.log('values', values);
-          }}>
-          {({
-            // handleSubmit,
-            values,
-            setFieldValue,
-            // errors,
-            // touched,
-            // handleBlur,
-            // isSubmitting,
-          }) => {
-            useEffect(() => {
-              const newDatePickerVisible = Array(
-                values.certificates.length,
-              ).fill(false);
-              setIssueDatePicker(newDatePickerVisible);
-              setIssueDate(Array(values.certificates.length).fill(new Date()));
-            }, [values.certificates.length]);
-            return (
-              <FieldArray
-                name="certificates"
-                render={arrayHelpers => (
-                  <View>
-                    {values.certificates && values.certificates.length > 0 ? (
-                      values.certificates.map((certificate, index) => {
-                        return (
-                          <View key={index} style={styles.experienceItem}>
-                            <View style={styles.inputContainer}>
-                              <Text style={styles.inputLabel}>
-                                Company Name
-                              </Text>
-
-                              <TextInput
-                                placeholder="Enter Name"
-                                style={styles.input}
-                                value={certificate.firmName}
-                                onChangeText={value =>
-                                  setFieldValue(
-                                    `certificates[${index}].firmName`,
-                                    value,
-                                  )
-                                }
-                              />
-                            </View>
-                            <View style={styles.inputContainer}>
-                              <Text style={styles.inputLabel}>
-                                Certificate Name
-                              </Text>
-
-                              <TextInput
-                                placeholder="Enter Answer"
-                                style={styles.input}
-                                value={certificate.certificate_name}
-                                onChangeText={value =>
-                                  setFieldValue(
-                                    `certificates[${index}].certificate_name`,
-                                    value,
-                                  )
-                                }
-                              />
-                            </View>
-                            <View style={styles.inputContainer}>
-                              <Text style={styles.inputLabel}>
-                                Certificate Number
-                              </Text>
-
-                              <TextInput
-                                placeholder="Enter Answer"
-                                style={styles.input}
-                                value={certificate.certificate_number}
-                                onChangeText={value =>
-                                  setFieldValue(
-                                    `certificates[${index}].certificate_number`,
-                                    value,
-                                  )
-                                }
-                              />
-                            </View>
-
-                            <View style={styles.inputContainer}>
-                              <Text style={styles.inputLabel}>Issue Date</Text>
-                              <TouchableOpacity
-                                style={{
-                                  backgroundColor: '#007BFF', // Customize the button color
-                                  padding: 10,
-                                  borderRadius: wp('2%'),
-                                  width: wp('85%'),
-                                  backgroundColor: '#E1EBFF',
-                                }} // Custom button style
-                                onPress={() => {
-                                  // Only show picker if not collapsed
-                                  const newVisibilities = [...issueDatePicker];
-                                  newVisibilities[index] = true; // Show date picker for this experience
-                                  setIssueDatePicker(newVisibilities);
-                                }}>
-                                {certificate.issueDate === null ? (
-                                  <Text style={styles.buttonText}>
-                                    Select Issue Date
-                                  </Text>
-                                ) : (
-                                  <Text
-                                    style={{
-                                      fontFamily: 'Poppins',
-                                      fontSize: 14,
-                                    }}>{`${certificate.issueDate}`}</Text>
-                                )}
-                              </TouchableOpacity>
-
-                              {issueDatePicker[index] && ( // Show only if collapsed is false
-                                <DateTimePicker
-                                  value={issueDate[index]}
-                                  mode="date"
-                                  display="default"
-                                  onChange={(event, selectedDate) => {
-                                    if (event.type === 'set') {
-                                      const currentDate =
-                                        selectedDate || issueDate[index];
-                                      // Format date to YYYY-MM-DD
-                                      const formattedDate = currentDate
-                                        .toISOString()
-                                        .split('T')[0];
-
-                                      // Update the field with the formatted date
-                                      setFieldValue(
-                                        `certificates[${index}].issueDate`,
-                                        formattedDate,
-                                      );
-
-                                      const newDates = [...issueDate];
-                                      newDates[index] = currentDate;
-                                      setIssueDate(newDates);
-                                    }
-                                    // Hide the date picker after selection
-                                    const newVisibilities = [
-                                      ...issueDatePicker,
-                                    ];
-                                    newVisibilities[index] = false;
-                                    setIssueDatePicker(newVisibilities);
-                                  }}
-                                />
-                              )}
-                            </View>
-                            {values.certificates.length > 1 && (
-                            <Button
-                              title="Remove"
-                              type="clear"
-                              titleStyle={{fontFamily: 'Poppins'}}
-                              buttonStyle={styles.removeButton}
-                              onPress={() => arrayHelpers.remove(index)} // Remove the experience
-                            />)}
-
-                            <CustomButton
-                              title="Save"
-                              onPress={async () => {
-                                try {
-                                  // Validate the current education using the schema
-                                  await certificateValidationSchema.validate(
-                                    certificate,
-                                    {
-                                      abortEarly: false,
-                                    },
-                                  );
-
-                                  const certificateToSubmit = {
-                                    firmName: certificate.firmName,
-                                    certificate_name:
-                                      certificate.certificate_name,
-                                    certificate_number:
-                                      certificate.certificate_number,
-                                    issueDate: certificate.issueDate,
-                                  };
-
-                                  console.log(
-                                    'Submitting individual certificate',
-                                    certificateToSubmit,
-                                  );
-                                  // Make the API call here
-                                  const response = await advocateCertificate(
-                                    certificateToSubmit,
-                                  );
-                                  console.log('API Response:', response);
-                                  if (
-                                    response?.data &&
-                                    response?.data?.success
-                                  ) {
-                                    showMessage({
-                                      message: 'Success',
-                                      description: response?.data?.message,
-                                      type: 'success',
-                                      titleStyle: {
-                                        fontFamily: 'Poppins SemiBold',
-                                      },
-                                      textStyle: {fontFamily: 'Poppins'},
-                                    });
-                                    navigation.navigate('ViewAdvocateProfile');
-                                  } else {
-                                    // Handle non-successful API responses here
-                                    const errorMsg =
-                                      response.error?.data?.message ||
-                                      'Something went wrong!';
-
-                                    showMessage({
-                                      message: 'Error',
-                                      description: errorMsg,
-                                      type: 'danger',
-                                      titleStyle: {
-                                        fontFamily: 'Poppins SemiBold',
-                                      },
-                                      textStyle: {fontFamily: 'Poppins'},
-                                    });
-                                  }
-                                  // Show API response in alert
-                                } catch (error) {
-                                  if (error instanceof Yup.ValidationError) {
-                                    // Alert.alert(
-                                    //   'Validation Error',
-                                    //   error.errors.join(', '),
-                                    // ); // Show validation errors in alert
-                                    showMessage({
-                                      message: 'Validation Error',
-                                      description: error.errors.join(', '), // Joins all errors into a single string
-                                      type: 'danger', // You can change the type to 'success', 'warning', etc.
-                                      titleStyle: {
-                                        fontFamily: 'Poppins SemiBold',
-                                      },
-                                      textStyle: {fontFamily: 'Poppins'},
-                                    });
-                                  } else {
-                                    console.error(error);
-                                    const errorMsg =
-                                      error?.response?.data?.error?.data
-                                        ?.message || 'Something went wrong!';
-
-                                    showMessage({
-                                      message: 'Error',
-                                      description: errorMsg,
-                                      type: 'danger',
-                                      titleStyle: {
-                                        fontFamily: 'Poppins SemiBold',
-                                      },
-                                      textStyle: {fontFamily: 'Poppins'},
-                                    });
-                                  }
-                                }
-                              }}
-                              loading={certificateLoading}
-                            />
-                          </View>
-                        );
-                      })
-                    ) : (
-                      <Text>No certificate added</Text>
-                    )}
-                    <CustomButton
-                      title="Add Certificate"
-                      onPress={() =>
-                        arrayHelpers.push({
-                          firmName: '',
-                          certificate_name: '',
-                          certificate_number: '',
-                          issueDate: null,
-                        })
-                      }
-                    />
-                  </View>
-                )}
-              />
-            );
-          }}
-        </Formik> */}
         <Formik
           initialValues={{
             firmName: '',
@@ -397,12 +114,13 @@ export default AddCertificate = ({navigation}) => {
           }) => (
             <View style={styles.experienceItem}>
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Company Name</Text>
+                <Text style={styles.inputLabel}>Company Name<Text style={{ color: 'red' }}> *</Text></Text>
 
                 <TextInput
                   placeholder="Enter Name"
                   style={styles.input}
                   value={values.firmName}
+                  onBlur={() => handleBlur('firmName')}
                   onChangeText={value => setFieldValue(`firmName`, value)}
                 />
                   {errors.firmName && touched.firmName && (
@@ -410,12 +128,13 @@ export default AddCertificate = ({navigation}) => {
                 )}
               </View>
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Certificate Name</Text>
+                <Text style={styles.inputLabel}>Certificate Name<Text style={{ color: 'red' }}> *</Text></Text>
 
                 <TextInput
                   placeholder="Enter Answer"
                   style={styles.input}
                   value={values.certificate_name}
+                  onBlur={() => handleBlur('certificate_name')}
                   onChangeText={value =>
                     setFieldValue(`certificate_name`, value)
                   }
@@ -425,12 +144,13 @@ export default AddCertificate = ({navigation}) => {
                 )}
               </View>
               <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Certificate Number</Text>
+                <Text style={styles.inputLabel}>Certificate Number<Text style={{ color: 'red' }}> *</Text></Text>
 
                 <TextInput
                   placeholder="Enter Answer"
                   style={styles.input}
                   value={values.certificate_number}
+                  onBlur={() => handleBlur('certificate_number')}
                   onChangeText={value =>
                     setFieldValue(`certificate_number`, value)
                   }
@@ -440,7 +160,7 @@ export default AddCertificate = ({navigation}) => {
                 )}
               </View>
               <View>
-                <Text style={styles.inputLabel}>Issue Date</Text>
+                <Text style={styles.inputLabel}>Issue Date<Text style={{ color: 'red' }}> *</Text></Text>
                 <TouchableOpacity
                   style={styles.customButton}
                   onPress={() => setIssueDatePicker(true)}>

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Image,
   ScrollView,
+  SafeAreaView,
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
@@ -50,7 +51,7 @@ const notifications = [
       'https://images.unsplash.com/photo-1719937206589-d13b6b008196?q=80&w=2700&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     message:
       'has booked a consultation with you. Check your appointments for more details.',
-    timestamp:'07 : 30 AM',
+    timestamp: '07 : 30 AM',
   },
   {
     id: '2',
@@ -59,7 +60,7 @@ const notifications = [
       'https://images.unsplash.com/photo-1719937206589-d13b6b008196?q=80&w=2700&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDF8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     message:
       'has left feedback on your recent consultation. Check the feedback section to view it.',
-      timestamp: '08 : 30 AM',
+    timestamp: '08 : 30 AM',
   },
   {
     id: '3',
@@ -71,7 +72,6 @@ const notifications = [
     timestamp: '09 : 30 AM',
   },
 ];
-
 
 const Notification = () => {
   const renderNotification = ({item}) => (
@@ -110,41 +110,46 @@ const Notification = () => {
 
   return (
     <>
-      <CustomHeader
-        title={'Notifications'}
-        icon={require('../../../assets/images/back.png')}
-      />
-      <ScrollView>
-        <View style={styles.container}>
-          <FlatList
-            data={notification}
-            renderItem={renderNotification}
-            keyExtractor={item => item.id}
-            ListHeaderComponent={() => (
-              <Text style={styles.sectionTitle}>Today</Text>
-            )}
-            showsVerticalScrollIndicator={false}
+      <SafeAreaView style={{flex: 1}}>
+        <View style={{paddingTop: hp('4.5%'), backgroundColor: '#F3F7FF'}}>
+          <CustomHeader
+            title={'Notifications'}
+            icon={require('../../../assets/images/back.png')}
           />
-          <FlatList
-            data={notifications}
-            renderItem={renderNotification}
-            keyExtractor={item => item.id}
-            ListHeaderComponent={() => (
-              <Text style={styles.sectionTitle}>Yesterday</Text>
-            )}
-            showsVerticalScrollIndicator={false}
-          />
-           <FlatList
-            data={notifications}
-            renderItem={renderNotification}
-            keyExtractor={item => item.id}
-            ListHeaderComponent={() => (
-              <Text style={styles.sectionTitle}>13 Nov 2024</Text>
-            )}
-            showsVerticalScrollIndicator={false}
-          />
+
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={styles.container}>
+              <FlatList
+                data={notification}
+                renderItem={renderNotification}
+                keyExtractor={item => item.id}
+                ListHeaderComponent={() => (
+                  <Text style={styles.sectionTitle}>Today</Text>
+                )}
+                showsVerticalScrollIndicator={false}
+              />
+              <FlatList
+                data={notifications}
+                renderItem={renderNotification}
+                keyExtractor={item => item.id}
+                ListHeaderComponent={() => (
+                  <Text style={styles.sectionTitle}>Yesterday</Text>
+                )}
+                showsVerticalScrollIndicator={false}
+              />
+              <FlatList
+                data={notifications}
+                renderItem={renderNotification}
+                keyExtractor={item => item.id}
+                ListHeaderComponent={() => (
+                  <Text style={styles.sectionTitle}>13 Nov 2024</Text>
+                )}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          </ScrollView>
         </View>
-      </ScrollView>
+      </SafeAreaView>
     </>
   );
 };
@@ -153,6 +158,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
+
     paddingHorizontal: wp('5%'),
     // paddingTop: 10,
   },

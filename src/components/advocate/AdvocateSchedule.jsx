@@ -8,17 +8,15 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  Modal,
-  Platform, // To handle platform-specific behavior
   FlatList,
   ImageBackground,
   ScrollView,
+  RefreshControl,
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
 } from 'react-native-responsive-screen';
-import LinearGradient from 'react-native-linear-gradient';
 import moment from 'moment';
 import Swiper from 'react-native-swiper';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -38,6 +36,7 @@ export default function AdvocateSchedule() {
   const [week, setWeek] = useState(
     moment(today).diff(moment(today).startOf('month'), 'weeks'),
   ); // Current week in the month
+  const [refresh, setRefresh] = useState(false);
   const [vacantCount, setVacantCount] = useState(0);
   const [upcomingCount, setUpcomingCount] = useState(0);
   const [showPicker, setShowPicker] = useState(false); // State to manage date picker visibility
@@ -60,7 +59,7 @@ export default function AdvocateSchedule() {
   useEffect(() => {
     refetch();
   }, [formattedDate, refetch]);
-  console.log('slotData', slotsData);
+  // console.log('slotData', slotsData);
 
   useEffect(() => {
     if (slotsData?.data) {
@@ -159,6 +158,19 @@ export default function AdvocateSchedule() {
     }
   };
 
+  const pullMe = async () => {
+    try {
+      setRefresh(true);
+      await Promise.all([
+        refetch(), // Refetch advocate data
+      ]);
+    } catch (error) {
+      console.error('Error during refetch:', error); // Handle errors if needed
+    } finally {
+      setRefresh(false); // Hide the refresh indicator after both data are fetched
+    }
+  };
+
   return (
     <>
       <SafeAreaView style={{flex: 1}}>
@@ -167,7 +179,10 @@ export default function AdvocateSchedule() {
             title={'Schedule'}
             icon={require('../../../assets/images/back.png')}
           />
-          <ScrollView>
+          <ScrollView
+            refreshControl={
+              <RefreshControl refreshing={refresh} onRefresh={pullMe} />
+            }>
             {/* Month Navigation Section */}
             <View style={styles.monthHeader}>
               <TouchableOpacity onPress={() => handleMonthChange(-1)}>
@@ -287,7 +302,7 @@ export default function AdvocateSchedule() {
                   size={100}
                   width={10}
                   fill={upcomingFill}
-                  tintColor="#115EC9"
+                  tintColor="#1262D2"
                   backgroundColor="transparent"
                   lineCap="round"
                   rotation={upcomingRotation}
@@ -360,7 +375,7 @@ export default function AdvocateSchedule() {
 
                   <View style={[styles.card, {backgroundColor: '#DFE4FF'}]}>
                     <Text style={styles.cardTitle}>Upcoming</Text>
-                    <Text style={[styles.Value, {color: '#000'}]}>
+                    <Text style={[styles.cardValue, {color: '#000'}]}>
                       {upcomingCount}
                     </Text>
                   </View>
@@ -368,155 +383,52 @@ export default function AdvocateSchedule() {
               </View>
             </View>
 
-            {/* <View style={{paddingVertical: hp('0.5%')}}>
-              <View style={styles.recentConsultationContainer}>
-                <Text style={styles.recentConsultationTitle}>Upcoming</Text>
-                <FlatList
-                  horizontal
-                  data={consultations}
-                  keyExtractor={item => item.id}
-                  renderItem={({item}) => (
-                    <ImageBackground
-                      // source={item.image}
-                      source={require('../../../assets/images/consultation.png')}
-                      style={styles.consultationCard}
-                      imageStyle={{borderRadius: 16}}>
-                      <View style={styles.consultationHeader}>
-                        <Text
-                          style={[styles.consultantName, {color: '#294776'}]}>
-                          {item.name}
-                        </Text>
-
-                        <View
-                          style={[
-                            styles.callContainer,
-                            {borderColor: '#294776'},
-                          ]}>
-                          <Image
-                            source={require('../../../assets/images/schedule/upcomingIcon.png')} // Replace with your image path
-                            style={styles.callIcon}
-                            resizeMode="contain" // Adjust as per your requirement (e.g. cover, stretch)
-                          />
-                        </View>
-                      </View>
-                      <View style={{flexDirection: 'row'}}>
-                        <Image
-                          source={require('../../../assets/images/icons/note.png')} // Replace with the actual path of your calendar icon
-                          style={styles.consultIcon}
-                          resizeMode="contain" // Adjust as needed
-                        />
-                        <Text
-                          style={[styles.consultationDate, {color: '#1262D2'}]}>
-                          28th Dec, 2024
-                        </Text>
-                      </View>
-                      <View style={{flexDirection: 'row'}}>
-                        <Image
-                          source={require('../../../assets/images/icons/time.png')} // Replace with the actual path of your calendar icon
-                          style={styles.consultIcon}
-                          resizeMode="contain" // Adjust as needed
-                        />
-                        <Text
-                          style={[styles.consultationDate, {color: '#1262D2'}]}>
-                          10:00 AM
-                        </Text>
-                      </View>
-                      <Text style={styles.consultationDescription}>
-                        {item.description}
-                      </Text>
-                    </ImageBackground>
-                  )}
-                  showsHorizontalScrollIndicator={false}
-                />
-              </View>
-            </View> */}
-
-            {/* <View style={{paddingVertical: hp('0.5%')}}>
-              <View style={styles.recentConsultationContainer}>
-                <Text style={styles.recentConsultationTitle}>Completed</Text>
-                <FlatList
-                  horizontal
-                  data={consultations}
-                  keyExtractor={item => item.id}
-                  renderItem={({item}) => (
-                    <ImageBackground
-                      // source={item.image}
-                      source={require('../../../assets/images/CompleteCard.png')}
-                      style={styles.consultationCard}
-                      imageStyle={{borderRadius: 16}}>
-                      <View style={styles.consultationHeader}>
-                        <Text
-                          style={[styles.consultantName, {color: '#289902'}]}>
-                          {item.name}
-                        </Text>
-                        <View
-                          style={[
-                            styles.callContainer,
-                            {borderColor: '#289902'},
-                          ]}>
-                          <Image
-                            source={require('../../../assets/images/completeCall.png')} // Replace with your image path
-                            style={styles.callIcon}
-                            resizeMode="contain" // Adjust as per your requirement (e.g. cover, stretch)
-                          />
-                        </View>
-                      </View>
-                      <View style={{flexDirection: 'row'}}>
-                        <Image
-                          source={require('../../../assets/images/icons/note.png')} // Replace with the actual path of your calendar icon
-                          style={styles.consultIcon}
-                          resizeMode="contain" // Adjust as needed
-                        />
-                        <Text
-                          style={[styles.consultationDate, {color: '#289902'}]}>
-                          28th Dec, 2024
-                        </Text>
-                      </View>
-                      <View style={{flexDirection: 'row'}}>
-                        <Image
-                          source={require('../../../assets/images/icons/time.png')} // Replace with the actual path of your calendar icon
-                          style={styles.consultIcon}
-                          resizeMode="contain" // Adjust as needed
-                        />
-                        <Text
-                          style={[styles.consultationDate, {color: '#289902'}]}>
-                          10:00 AM
-                        </Text>
-                      </View>
-                      <Text style={styles.consultationDescription}>
-                        {item.description}
-                      </Text>
-                    </ImageBackground>
-                  )}
-                  showsHorizontalScrollIndicator={false}
-                />
-              </View>
-            </View> */}
             <View style={{paddingVertical: hp('0.5%')}}>
               <View style={styles.recentConsultationContainer}>
                 <Text style={styles.recentConsultationTitle}>Upcoming</Text>
 
-                {/* Check if slot data exists */}
                 {slotsData?.data?.length === 0 ? (
-                  <Text style={styles.noCreatedSlotMessage}>
-                    No created slot
-                  </Text> // If no data is available
+                  <View
+                    style={{
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                    }}>
+                    <Image
+                      source={require('../../../assets/images/NoResult.png')}
+                      style={{width: 150, height: 150}}
+                    />
+                    <Text style={styles.noCreatedSlotMessage}>
+                      No upcoming slot
+                    </Text>
+                  </View>
                 ) : (
                   <FlatList
                     horizontal
-                    data={slotsData?.data} // Each item contains a date and slotes array
-                    keyExtractor={item => item._id} // Unique identifier for each slot
+                    data={slotsData?.data}
+                    keyExtractor={(item, index) => index + 1}
                     renderItem={({item}) => (
                       <>
-                        {/* Check if there are vacant slots in the current item */}
-                        {item.slotes.filter(slot => slot.status === 'Upcoming')
-                          .length === 0 ? (
-                          <Text style={styles.noCreatedSlotMessage}>
-                            No upcoming slot
-                          </Text> // Show message if no vacant slots
+                        {item?.slotes?.filter(
+                          slot => slot.status === 'Upcoming',
+                        )?.length === 0 ? (
+                          <View
+                            style={{
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: wp('100%'),
+                            }}>
+                            <Image
+                              source={require('../../../assets/images/NoResult.png')}
+                              style={{width: 150, height: 150}}
+                            />
+                            <Text style={styles.noCreatedSlotMessage}>
+                              No upcoming slot
+                            </Text>
+                          </View>
                         ) : (
                           item.slotes
-                            .filter(slot => slot.status === 'Upcoming') // Filter for vacant slots only
+                            .filter(slot => slot.status === 'Upcoming')
                             .map(slot => (
                               <TouchableWithoutFeedback
                                 onPress={() =>
@@ -525,7 +437,7 @@ export default function AdvocateSchedule() {
                                   })
                                 }>
                                 <ImageBackground
-                                  key={slot._id} // Use unique _id for each slot
+                                  key={slot._id}
                                   source={require('../../../assets/images/consultation.png')}
                                   style={styles.consultationCard}
                                   imageStyle={styles.cardBorder}>
@@ -604,62 +516,120 @@ export default function AdvocateSchedule() {
               </View>
             </View>
 
-            {/* <View style={{paddingVertical: hp('0.5%')}}>
+            <View style={{paddingVertical: hp('0.5%')}}>
               <View style={styles.recentConsultationContainer}>
-                <Text style={styles.recentConsultationTitle}>Missed</Text>
-                <FlatList
-                  horizontal
-                  data={consultations}
-                  keyExtractor={item => item.id}
-                  renderItem={({item}) => (
-                    <ImageBackground
-                    
-                      source={require('../../../assets/images/schedule/missedCard.png')}
-                      style={styles.consultationCard}
-                      imageStyle={{borderRadius: 16}}>
-                      <View style={styles.consultationHeader}>
-                        <Text style={[styles.consultantName, {color: 'red'}]}>
-                          {item.name}
-                        </Text>
-                      
-                        <View
-                          style={[styles.callContainer, {borderColor: 'red'}]}>
-                          <Image
-                            source={require('../../../assets/images/schedule/missedIcon.png')} 
-                            style={styles.callIcon}
-                            resizeMode="contain" 
-                          />
-                        </View>
-                      </View>
-                      <View style={{flexDirection: 'row'}}>
-                        <Image
-                          source={require('../../../assets/images/icons/note.png')} 
-                          style={styles.consultIcon}
-                          resizeMode="contain" 
-                        />
-                        <Text style={[styles.consultationDate, {color: 'red'}]}>
-                          28th Dec, 2024
-                        </Text>
-                      </View>
-                      <View style={{flexDirection: 'row'}}>
-                        <Image
-                          source={require('../../../assets/images/icons/time.png')} 
-                          style={styles.consultIcon}
-                          resizeMode="contain" 
-                        />
-                        <Text style={[styles.consultationDate, {color: 'red'}]}>
-                          10:00 AM
-                        </Text>
-                      </View>
-                      <Text style={styles.consultationDescription}>
-                        {item.description}
-                      </Text>
-                    </ImageBackground>
-                  )}
-                  showsHorizontalScrollIndicator={false}
-                />
+                <Text style={styles.recentConsultationTitle}>Vacant</Text>
+                {slotsData?.data?.length === 0 ? (
+                  <Text style={styles.noCreatedSlotMessage}>
+                    No created slot
+                  </Text>
+                ) : (
+                  <FlatList
+                    horizontal
+                    data={slotsData?.data}
+                    keyExtractor={(item, index) => index + 1}
+                    renderItem={({item}) => {
+                      return (
+                        <>
+                          {item?.slotes?.filter(slot => slot.status === 'Vacant')
+                            ?.length === 0 ? (
+                            <View
+                              style={{
+                                backgroundColor: '#F3F7FF',
+                                borderWidth: 1,
+                                borderColor: '#1262D2',
+                                width: wp('90%'),
+                                height: 200,
+                              }}>
+                              <Text style={styles.noCreatedSlotMessage}>
+                                No created slot
+                              </Text>
+                            </View>
+                          ) : (
+                            item.slotes
+                              .filter(slot => slot.status === 'Vacant') // Filter for vacant slots only
+                              .map((slot, index) => {
+                                return (
+                                  <View key={index + 1}>
+                                    <ImageBackground
+                                      key={slot._id} // Use unique _id for each slot
+                                      source={require('../../../assets/images/CompleteCard.png')}
+                                      style={styles.consultationCard}
+                                      imageStyle={styles.cardBorder}>
+                                      <View style={styles.consultationHeader}>
+                                        <Text
+                                          style={[
+                                            styles.consultantName,
+                                            {color: '#289902'},
+                                          ]}
+                                        />
+
+                                        <View
+                                          style={[
+                                            styles.callContainer,
+                                            {borderColor: '#289902'},
+                                          ]}>
+                                          <Image
+                                            source={require('../../../assets/images/completeCall.png')}
+                                            style={styles.callIcon}
+                                            resizeMode="contain"
+                                          />
+                                        </View>
+                                      </View>
+                                      <View style={{flexDirection: 'row'}}>
+                                        <Image
+                                          source={require('../../../assets/images/icons/note.png')}
+                                          style={styles.consultIcon}
+                                          resizeMode="contain"
+                                        />
+                                        <Text
+                                          style={[
+                                            styles.consultationDate,
+                                            {color: '#289902'},
+                                          ]}>
+                                          {new Date(
+                                            item.date,
+                                          ).toLocaleDateString('en-GB', {
+                                            day: '2-digit',
+                                            month: 'short',
+                                            year: 'numeric',
+                                          })}
+                                        </Text>
+                                      </View>
+                                      <View style={{flexDirection: 'row'}}>
+                                        <Image
+                                          source={require('../../../assets/images/icons/time.png')}
+                                          style={styles.consultIcon}
+                                          resizeMode="contain"
+                                        />
+                                        <Text
+                                          style={[
+                                            styles.consultationDate,
+                                            {color: '#289902'},
+                                          ]}>
+                                          {Array.isArray(slot.serviceType)
+                                            ? slot.serviceType.join(', ')
+                                            : slot.serviceType}
+                                        </Text>
+                                      </View>
+
+                                      {/* <Text style={styles.consultationDescription}>
+                                  {slot.description ||
+                                    'No description available'}
+                                </Text> */}
+                                    </ImageBackground>
+                                  </View>
+                                );
+                              })
+                          )}
+                        </>
+                      );
+                    }}
+                    showsHorizontalScrollIndicator={false}
+                  />
+                )}
               </View>
-            </View> */}
+            </View>
           </ScrollView>
         </View>
 
@@ -682,6 +652,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F7FF',
+    paddingTop: hp('4.5%'),
   },
   monthHeader: {
     flexDirection: 'row',
@@ -869,9 +840,9 @@ const styles = StyleSheet.create({
   },
   noCreatedSlotMessage: {
     textAlign: 'center',
-    fontSize: 16,
+    fontSize: hp('2.5%'),
     color: '#888', // Or any color of your choice
-    marginVertical: 10,
+    marginBottom: 10,
     fontFamily: 'Poppins',
   },
   cardBorder: {

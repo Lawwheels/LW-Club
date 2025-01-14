@@ -77,13 +77,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.lawwheelsclub"
+    namespace "law.wheels.club"
     defaultConfig {
-        applicationId "com.lawwheelsclub"
+        applicationId "law.wheels.club"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.2"
+        versionCode 1
+        versionName "1.0"
     }
     signingConfigs {
         debug {

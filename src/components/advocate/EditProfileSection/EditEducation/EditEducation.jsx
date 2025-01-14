@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Switch,
+  RefreshControl
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
@@ -24,11 +26,15 @@ import {
   useEditEducationMutation,
   useGetEducationByIdQuery,
 } from '../../../../redux/api/api';
+import { handleError } from '../../../../../shared/authUtils';
 
 const validationSchema = Yup.object().shape({
   school_university: Yup.string().required('School / University is required'),
+  fieldOfStudy: Yup.string().required('Study field is required'),
+  degreeType: Yup.string().required('Degree type is required'),
+  startDate: Yup.date().nullable().required('Start date is required'),
+  endDate: Yup.date().nullable(),
 });
-
 export default EditEducation = ({route}) => {
   const navigation = useNavigation();
   const {id} = route?.params || {};
@@ -36,8 +42,9 @@ export default EditEducation = ({route}) => {
   const [endDate, setEndDate] = useState(new Date());
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [endDatePickerVisible, setEndDatePickerVisible] = useState(false);
+  const [refresh,setRefresh]=useState(false);
 
-  const {data, isLoading, error} = useGetEducationByIdQuery(id);
+  const {data, isLoading, error,refetch} = useGetEducationByIdQuery(id);
   const [editEducation] = useEditEducationMutation();
   useEffect(() => {
     if (data && data.data) {
@@ -61,13 +68,13 @@ export default EditEducation = ({route}) => {
       </View>
     );
   }
-  console.log(data);
+  // console.log(data);
   // Handle error state
   if (error) {
-    console.log(error);
-    // Show the flash message
+    console.log("editeducation",error);
+    handleError(error);
     showMessage({
-      message: `An error occurred: ${error.message}`,
+      message: `An error occurred: ${error?.message}`,
       type: 'danger',
       titleStyle: {fontFamily: 'Poppins'},
       style: {backgroundColor: 'red'},
@@ -137,18 +144,23 @@ export default EditEducation = ({route}) => {
     activities: data?.data?.activities || '',
     degreeType: data?.data?.degreeType || '',
     description: data?.data?.description || '',
-    isRecent: data?.data?.isRecent ?? false, // Ensure it's a boolean
-    isOngoing: data?.data?.isOngoing ?? false,
+    isRecent: data?.data?.isRecent || false, // Ensure it's a boolean
+    isOngoing: data?.data?.isOngoing || false,
+    startDate: data?.data?.startDate || null,
+    endDate: data?.data?.endDate || null,
   };
-
-  const profileVisible = [
-    {key: '1', value: 'True'},
-    {key: '2', value: 'False'},
-  ];
-
-  const booleanMapping = {
-    True: true,
-    False: false,
+  const pullMe = async () => {
+    try {
+      setRefresh(true);
+      await Promise.all([
+        refetch(), // Refetch advocate data
+      ]);
+    } catch (error) {
+      handleError(error);
+      console.error('Error during refetch:', error); // Handle errors if needed
+    } finally {
+      setRefresh(false); // Hide the refresh indicator after both data are fetched
+    }
   };
 
   return (
@@ -159,31 +171,74 @@ export default EditEducation = ({route}) => {
       />
       <KeyboardAwareScrollView
         style={styles.container}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refresh} onRefresh={pullMe} />
+        }>
         <Formik
           initialValues={initialValues}
           validationSchema={validationSchema}
           enableReinitialize
           onSubmit={async (values, {setSubmitting}) => {
             setSubmitting(true); // Set submitting to true at the start
+            const startDateISO = startDate.toISOString().split('T')[0];
+            const endDateISO = values.endDate ? new Date(values.endDate).toISOString().split('T')[0] : null;
+        
+            // Validate if endDate is after startDate
+            if (!values.isOngoing && endDateISO) {
+              const startDateObj = new Date(startDateISO);
+              const endDateObj = new Date(endDateISO);
+              if (endDateObj <= startDateObj) {
+                showMessage({
+                  message: 'Error',
+                  description: 'End date must be after the start date.',
+                  type: 'danger',
+                  titleStyle: { fontFamily: 'Poppins SemiBold' },
+                  textStyle: { fontFamily: 'Poppins' },
+                });
+                setSubmitting(false);
+                return; // Halt submission
+              }
+            }
             try {
               const experienceToSubmit = {
                 school_university: values.school_university,
-                degreeType: values.degreeType,
-                grade: values.degreeType,
-                activities: values.activities,
-                fieldOfStudy: values.fieldOfStudy,
-                description: values.description,
-                startDate: startDate.toISOString().split('T')[0],
-                endDate: endDate.toISOString().split('T')[0],
-                isRecent: Boolean(values.isRecent), // Ensure boolean value
-                isOngoing: Boolean(values.isOngoing),
+                startDate: startDateISO,
+                // endDate: endDate.toISOString().split('T')[0],
+                isRecent: values.isRecent,
+                isOngoing: values.isOngoing,
                 id,
               };
+              // if (!values.isOngoing && values.endDate) {
+              //   const isValidDate = !isNaN(new Date(values.endDate).getTime()); // Check for valid date
+              //   if (isValidDate) {
+              //     experienceToSubmit.endDate = values.endDate;
+              //   }
+              // }
+              if (!values.isOngoing && values.endDate) {
+                experienceToSubmit.endDate = endDateISO;
+              }
+          
+              // Conditionally add description if it's not an empty string
+              if (values.description.trim() !== '') {
+                experienceToSubmit.description = values.description;
+              }
+              if (values.grade.trim() !== '') {
+                experienceToSubmit.grade = values.grade;
+              }
+              if (values.fieldOfStudy.trim() !== '') {
+                experienceToSubmit.fieldOfStudy = values.fieldOfStudy;
+              }
+              if (values.activities.trim() !== '') {
+                experienceToSubmit.activities = values.activities;
+              }
+              if (values.degreeType.trim() !== '') {
+                experienceToSubmit.degreeType = values.degreeType;
+              }
 
-              // console.log('Submitting experience:', experienceToSubmit);
+              console.log('Submitting experience:', experienceToSubmit);
               const res = await editEducation(experienceToSubmit);
-
+              console.log(res);
               if (res && res?.data && res?.data?.success) {
                 showMessage({
                   message: 'Success',
@@ -228,181 +283,230 @@ export default EditEducation = ({route}) => {
             touched,
             handleBlur,
             isSubmitting,
-          }) => (
-            <View style={styles.experienceItem}>
-              {/* Job Title */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>School / University</Text>
+          }) => {
+            console.log(errors);
+            return (
+              <View style={styles.experienceItem}>
+                {/* Job Title */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>School / University</Text>
 
-                <TextInput
-                  placeholder="Ex: Boston University"
-                  style={styles.input}
-                  value={values.school_university}
-                  onChangeText={value =>
-                    setFieldValue(`school_university`, value)
-                  }
-                />
-              </View>
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Degree</Text>
-
-                <TextInput
-                  placeholder="Ex: Bachelor's"
-                  style={styles.input}
-                  value={values.degreeType}
-                  onChangeText={value => setFieldValue(`degreeType`, value)}
-                />
-              </View>
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Study Field</Text>
-
-                <TextInput
-                  placeholder="Ex:Business"
-                  style={styles.input}
-                  value={values.fieldOfStudy}
-                  onChangeText={value => setFieldValue(`fieldOfStudy`, value)}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Grade</Text>
-
-                <TextInput
-                  placeholder="Ex: Grade A, Excellent performance"
-                  style={styles.input}
-                  value={values.grade}
-                  onChangeText={value => setFieldValue(`grade`, value)}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Activities</Text>
-
-                <TextInput
-                  placeholder="Enter Answer"
-                  style={{
-                    padding: 12,
-                    borderRadius: 10,
-                    backgroundColor: '#E1EBFF',
-                    fontFamily: 'Poppins',
-                  }}
-                  multiline={true}
-                  numberOfLines={4}
-                  value={values.activities}
-                  textAlignVertical="top"
-                  onChangeText={value => setFieldValue(`activities`, value)}
-                />
-              </View>
-
-              {/* Start Date */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Start Date</Text>
-                <TouchableOpacity
-                  style={styles.customButton}
-                  onPress={() => setDatePickerVisible(true)}>
-                  <Text style={styles.buttonText}>
-                  {startDate ? startDate.toDateString() : 'Enter Start Date'}
-                  </Text>
-                </TouchableOpacity>
-                {datePickerVisible && (
-                  <DateTimePicker
-                    value={startDate}
-                    mode="date"
-                    display="default"
-                    onChange={handleDateChange}
+                  <TextInput
+                    placeholder="Ex: Boston University"
+                    style={styles.input}
+                    value={values.school_university}
+                    onBlur={() => handleBlur('school_university')}
+                    onChangeText={value =>
+                      setFieldValue(`school_university`, value)
+                    }
                   />
-                )}
-              </View>
+                  {touched.school_university && errors.school_university && (
+                    <Text style={styles.errorText}>
+                      {errors.school_university}
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Degree</Text>
 
-              {/* End Date */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>End Date</Text>
-                <TouchableOpacity
-                  style={styles.customButton}
-                  onPress={() => setEndDatePickerVisible(true)}>
-                  <Text style={styles.buttonText}>
-                  {endDate ? endDate.toDateString() : 'Enter Start Date'}
-                  </Text>
-                </TouchableOpacity>
-                {endDatePickerVisible && (
-                  <DateTimePicker
-                    value={endDate}
-                    mode="date"
-                    display="default"
-                    onChange={handleEndDate}
+                  <TextInput
+                    placeholder="Ex: Bachelor's"
+                    style={styles.input}
+                    value={values.degreeType}
+                    onBlur={() => handleBlur('degreeType')}
+                    onChangeText={value => setFieldValue(`degreeType`, value)}
                   />
-                )}
-              </View>
+                  {touched.degreeType && errors.degreeType && (
+                    <Text style={styles.errorText}>{errors.degreeType}</Text>
+                  )}
+                </View>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Study Field</Text>
 
-              {/* Description */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Description</Text>
-                <TextInput
-                  placeholder="Enter Description"
-                  style={{
-                    padding: 12,
-                    borderRadius: 10,
-                    backgroundColor: '#E1EBFF',
-                    fontFamily: 'Poppins',
-                  }}
-                  multiline
-                  numberOfLines={4}
-                  value={values.description}
-                  onChangeText={value => setFieldValue('description', value)}
-                  textAlignVertical="top"
+                  <TextInput
+                    placeholder="Ex:Business"
+                    style={styles.input}
+                    value={values.fieldOfStudy}
+                    onBlur={() => handleBlur('fieldOfStudy')}
+                    onChangeText={value => setFieldValue(`fieldOfStudy`, value)}
+                  />
+                  {touched.fieldOfStudy && errors.fieldOfStudy && (
+                    <Text style={styles.errorText}>{errors.fieldOfStudy}</Text>
+                  )}
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Grade</Text>
+
+                  <TextInput
+                    placeholder="Ex: Grade A, Excellent performance"
+                    style={styles.input}
+                    value={values.grade}
+                    onBlur={() => handleBlur('grade')}
+                    onChangeText={value => setFieldValue(`grade`, value)}
+                  />
+                </View>
+
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Activities</Text>
+
+                  <TextInput
+                    placeholder="Enter Answer"
+                    style={{
+                      padding: 12,
+                      borderRadius: 10,
+                      backgroundColor: '#E1EBFF',
+                      fontFamily: 'Poppins',
+                    }}
+                    multiline={true}
+                    numberOfLines={4}
+                    value={values.activities}
+                    onBlur={() => handleBlur('activities')}
+                    textAlignVertical="top"
+                    onChangeText={value => setFieldValue(`activities`, value)}
+                  />
+                </View>
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Ongoing</Text>
+                  <View style={styles.switchContainer}>
+                    <Text style={styles.switchText}>
+                      {values.isOngoing ? 'Yes' : 'No'}
+                    </Text>
+                    <Switch
+                      trackColor={{false: '#767577', true: '#1262D2'}}
+                      thumbColor={values.isOngoing ? '#fff' : '#f4f3f4'}
+                      onValueChange={value => setFieldValue('isOngoing', value)}
+                      value={values.isOngoing}
+                    />
+                  </View>
+                </View>
+                  <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Recent</Text>
+                  <View style={styles.switchContainer}>
+                    <Text style={styles.switchText}>
+                      {values.isRecent ? 'Yes' : 'No'}
+                    </Text>
+                    <Switch
+                      trackColor={{false: '#767577', true: '#1262D2'}}
+                      thumbColor={values.isRecent ? '#fff' : '#f4f3f4'}
+                      onValueChange={value => setFieldValue('isRecent', value)}
+                      value={values.isRecent}
+                    />
+                  </View>
+                </View> 
+                {/* Start Date */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Start Date</Text>
+                  <TouchableOpacity
+                    style={styles.customButton}
+                    onPress={() => setDatePickerVisible(true)}>
+                    <Text style={styles.buttonText}>
+                      {startDate
+                        ? startDate.toDateString()
+                        : 'Enter Start Date'}
+                    </Text>
+                  </TouchableOpacity>
+                  {datePickerVisible && (
+                    <DateTimePicker
+                      value={startDate}
+                      mode="date"
+                      display="default"
+                      onChange={handleDateChange}
+                    />
+                  )}
+                  {touched.startDate && errors.startDate && (
+                    <Text style={styles.errorText}>{errors.startDate}</Text>
+                  )}
+                </View>
+
+                {/* End Date */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Expected End Date</Text>
+                  {/* <TouchableOpacity
+                    style={styles.customButton}
+                    onPress={() => setEndDatePickerVisible(true)}>
+                    <Text style={styles.buttonText}>
+                      {endDate ? endDate.toDateString() : 'Enter Start Date'}
+                    </Text>
+                  </TouchableOpacity>
+                  {endDatePickerVisible && (
+                    <DateTimePicker
+                      value={endDate}
+                      mode="date"
+                      display="default"
+                      onChange={handleEndDate}
+                    />
+                  )} */}
+                   <TouchableOpacity
+                          style={styles.customButton}
+                          onPress={() => setEndDatePickerVisible(true)}>
+                          {values.isOngoing ? (
+                            <Text style={styles.buttonText}>Present</Text> // Display "Present" if ongoing is true
+                          ) : values.endDate ? (
+                            <Text style={styles.buttonText}>
+                              {new Date(values.endDate).toDateString()}
+                              {/* {new Date(values.endDate).toISOString().split('T')[0]}  */}
+                            </Text> // Show selected end date
+                          ) : (
+                            <Text style={styles.buttonText}>
+                              Select End Date
+                            </Text> // Show "Select End Date" if no end date is selected
+                          )}
+                        </TouchableOpacity>
+
+                        {endDatePickerVisible &&
+                          !values.isOngoing && ( // Show date picker only if ongoing is false
+                            <DateTimePicker
+                              value={endDate || new Date()}
+                              mode="date"
+                              display="default"
+                              onChange={(event, selectedDate) => {
+                                if (event.type === 'set') {
+                                  const formattedDate = selectedDate
+                                    .toISOString()
+                                    .split('T')[0];
+                                  setFieldValue('endDate', formattedDate); // Set end date
+                                  setEndDate(selectedDate); // Update state
+                                }
+                                setEndDatePickerVisible(false); // Hide picker after date is selected
+                              }}
+                            />
+                          )}
+                </View>
+
+                {/* Description */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Description</Text>
+                  <TextInput
+                    placeholder="Enter Description"
+                    style={{
+                      padding: 12,
+                      borderRadius: 10,
+                      backgroundColor: '#E1EBFF',
+                      fontFamily: 'Poppins',
+                    }}
+                    multiline
+                    numberOfLines={4}
+                    value={values.description}
+                    onChangeText={value => setFieldValue('description', value)}
+                    textAlignVertical="top"
+                  />
+                </View>
+
+                {/* Recent */}
+               
+                {/* Ongoing */}
+               
+
+                {/* Submit Button */}
+                <CustomButton
+                  title="Update"
+                  onPress={handleSubmit}
+                  loading={isSubmitting}
                 />
               </View>
-
-              {/* Recent */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Recent</Text>
-                <SelectList
-                  setSelected={val =>
-                    setFieldValue('isRecent', booleanMapping[val])
-                  }
-                  defaultOption={{
-                    key: initialValues.isRecent ? 'True' : 'False',
-                    value: initialValues.isRecent ? 'True' : 'False',
-                  }}
-                  data={profileVisible}
-                  placeholder="Select an option"
-                  onBlur={() => handleBlur('isRecent')}
-                  fontFamily="Poppins"
-                  save="value"
-                  inputStyles={{color: '#8E8E8E'}}
-                  boxStyles={styles.dropdown}
-                />
-              </View>
-
-              {/* Ongoing */}
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Ongoing</Text>
-                <SelectList
-                  setSelected={val =>
-                    setFieldValue('isOngoing', booleanMapping[val])
-                  }
-                  defaultOption={{
-                    key: initialValues.isOngoing ? 'True' : 'False',
-                    value: initialValues.isOngoing ? 'True' : 'False',
-                  }}
-                  data={profileVisible}
-                  placeholder="Select an option"
-                  onBlur={() => handleBlur('isOngoing')}
-                  fontFamily="Poppins"
-                  save="value"
-                  inputStyles={{color: '#8E8E8E'}}
-                  boxStyles={styles.dropdown}
-                />
-              </View>
-
-              {/* Submit Button */}
-              <CustomButton
-                title="Update"
-                onPress={handleSubmit}
-                loading={isSubmitting}
-              />
-            </View>
-          )}
+            );
+          }}
         </Formik>
       </KeyboardAwareScrollView>
     </>
@@ -468,5 +572,19 @@ const styles = StyleSheet.create({
     color: '#7F7F80', // Text color
     fontSize: 14,
     fontFamily: 'Poppins',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#E1EBFF',
+  },
+  switchText: {
+    fontSize: 14,
+    fontFamily: 'Poppins',
+    color: '#333',
   },
 });

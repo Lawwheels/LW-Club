@@ -37,6 +37,7 @@ import {
   useGetSpecializationQuery,
   useUpdateAdvocateBioMutation,
 } from '../../redux/api/api';
+import { handleError } from '../../../shared/authUtils';
 
 // Validation schema using Yup
 const validationSchema = Yup.object().shape({
@@ -188,8 +189,9 @@ export default AdvocateProfile = ({navigation}) => {
 
   // Handle error state
   if (error) {
+    handleError(error);
     console.log(error);
-    return <Text>An error occurred: {error.message}</Text>;
+    return <Text>An error occurred: {error?.message}</Text>;
   }
   console.log(data.data[0].language);
   // Handle error states for both queries
@@ -197,7 +199,7 @@ export default AdvocateProfile = ({navigation}) => {
     return (
       <Text>
         An error occurred while fetching specializations:{' '}
-        {specializationError.message}
+        {specializationError?.message}
       </Text>
     );
   }

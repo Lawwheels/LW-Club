@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   Modal,
+  RefreshControl,
 } from 'react-native';
 import {
   widthPercentageToDP as wp,
@@ -21,21 +22,30 @@ import {
   useDeleteUserProfilePicMutation,
   useGetAdviseSeekerQuery,
   useUserProfilePicMutation,
+  useGetUserCountQuery,
 } from '../../redux/api/api';
 import CustomDeleteModal from '../../../shared/CustomDeleteModal';
 import {useNavigation} from '@react-navigation/native';
+import { handleError } from '../../../shared/authUtils';
 
 const UserProfile = () => {
   const navigation = useNavigation();
+  const [refresh, setRefresh] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const [deleteModal, setDeleteModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const {data: userData, isLoading, error} = useGetAdviseSeekerQuery();
+  const {data: userData, isLoading, error, refetch} = useGetAdviseSeekerQuery();
+  const {
+    data: count,
+    isLoading: followLoading,
+    error: followError,
+  } = useGetUserCountQuery();
+  // console.log('dt', count);
   const [userProfilePic] = useUserProfilePicMutation();
 
   const [deleteUserProfilePic] = useDeleteUserProfilePicMutation();
   const userDetails = userData?.data;
-  if (isLoading) {
+  if (isLoading || followLoading) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -44,9 +54,11 @@ const UserProfile = () => {
   }
 
   // Handle error state
-  if (error) {
+  if (error || followError) {
     console.log(error);
-    return <Text>An error occurred: {error.message}</Text>;
+    handleError(error);
+    handleError(followError)
+    // return <Text>An error occurred: {error?.message}</Text>;
   }
   const openModal = () => setModalVisible(true);
   const closeModal = () => setModalVisible(false);
@@ -80,6 +92,7 @@ const UserProfile = () => {
           titleStyle: {fontFamily: 'Poppins SemiBold'},
           textStyle: {fontFamily: 'Poppins'},
         });
+        setModalVisible(false);
       } else {
         const errorMsg =
           response.error?.data?.message || 'Something went wrong!';
@@ -148,13 +161,30 @@ const UserProfile = () => {
       setModalVisible(false);
     }
   };
+  const pullMe = async () => {
+    try {
+      setRefresh(true);
+      await Promise.all([
+        refetch(), // Refetch advocate data
+      ]);
+    } catch (error) {
+      console.error('Error during refetch:', error); // Handle errors if needed
+    } finally {
+      setRefresh(false); // Hide the refresh indicator after both data are fetched
+    }
+  };
+  console.log(userDetails)
   return (
-    <>
+    <View style={{paddingTop: hp('3%'), backgroundColor: '#F3F7FF'}}>
       <CustomHeader
         title={'My Profile'}
         icon={require('../../../assets/images/back.png')}
       />
-      <ScrollView style={{flex: 1}}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refresh} onRefresh={pullMe} />
+        }>
         <View style={styles.container}>
           {/* Profile Header */}
 
@@ -166,7 +196,9 @@ const UserProfile = () => {
                   userDetails.profilePic &&
                   userDetails?.profilePic?.url
                     ? {uri: userDetails?.profilePic?.url}
-                    : require('../../../assets/images/user1.png')
+                    : {
+                        uri: 'https://www.shutterstock.com/image-vector/avatar-gender-neutral-silhouette-vector-600nw-2470054311.jpg',
+                      }
                 }
                 style={styles.profileImage}
               />
@@ -178,6 +210,26 @@ const UserProfile = () => {
               </TouchableOpacity>
 
               <Text style={styles.profileName}>{userDetails?.name}</Text>
+              {/* <View>
+                <TouchableOpacity
+                  style={{
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    marginTop: 5,
+                  }}
+                  onPress={() => navigation.navigate('UserFollowing')}>
+                  <Text style={{fontFamily: 'Poppins'}}>Following :</Text>
+                  <Text
+                    style={{
+                      fontFamily: 'Poppins',
+                      alignSelf: 'center',
+                      marginLeft: 5,
+                    }}>
+                    {count?.data?.following || 0}
+                  </Text>
+                </TouchableOpacity>
+              </View> */}
             </View>
 
             {/* Details Section */}
@@ -189,12 +241,12 @@ const UserProfile = () => {
                   <View style={{flexDirection: 'row'}}>
                     <Image
                       source={require('../../../assets/images/profile/callImage.png')}
-                      style={{width: 22, height: 24}}
+                      style={{width: wp('5.5%'), height: hp('3%')}}
                     />
                     <Text
                       style={[
                         styles.description,
-                        {fontSize: wp('4%'), marginLeft: wp(3)},
+                        {fontSize: wp('3.8%'), marginLeft: wp(3)},
                       ]}>
                       91+{userDetails?.mobileNumber}
                     </Text>
@@ -204,7 +256,7 @@ const UserProfile = () => {
                   onPress={() => navigation.navigate('EditUserProfile')}>
                   <Image
                     source={require('../../../assets/images/editIcon.png')}
-                    style={{width: 20, height: 20}}
+                    style={{width: wp('6%'), height: hp('3%')}}
                   />
                 </TouchableOpacity>
               </View>
@@ -213,50 +265,49 @@ const UserProfile = () => {
               <View style={{flexDirection: 'row'}}>
                 <Image
                   source={require('../../../assets/images/profile/mail.png')}
-                  style={{width: 24, height: 24}}
+                  style={{width: wp('6%'), height: hp('3%')}}
                 />
                 <Text
                   style={[
                     styles.description,
-                    {fontSize: wp('4%'), marginLeft: wp(3)},
+                    {fontSize: wp('3.8%'), marginLeft: wp(3)},
                   ]}>
                   {userDetails?.email}
                 </Text>
               </View>
-              {userDetails?.headLine && (
-                <>
-                  <Text style={styles.title}>Bio</Text>
+
+              <Text style={styles.title}>Bio</Text>
+              <Text
+                style={[
+                  styles.description,
+                  {textAlign: 'justify', fontSize: wp('3.8%')},
+                ]}>
+                {userDetails?.headLine || '-'}
+              </Text>
+
+              <Text style={styles.title}>Address</Text>
+              {userDetails?.location?.city &&
+              userDetails?.location?.state &&
+              userDetails?.location?.country ? (
+                <View style={{flexDirection: 'row'}}>
+                  <Image
+                    source={require('../../../assets/images/profile/location.png')}
+                    style={{width: 24, height: 24}}
+                  />
                   <Text
                     style={[
                       styles.description,
-                      {textAlign: 'justify', fontSize: 14},
+                      {fontSize: wp('3.8%'), marginLeft: wp(3)},
                     ]}>
-                    {userDetails?.headLine}
+                    {`${userDetails.location.city}, ${userDetails.location.state}, ${userDetails.location.country}`}
                   </Text>
-                </>
+                </View>
+              ) : (
+                <Text>{'-'}</Text>
               )}
-              {userDetails?.location?.city && (
+              <Text style={styles.title}>Profession</Text>
+              {userDetails?.profession_nun_user ? (
                 <>
-                  <Text style={styles.title}>Address</Text>
-                  <View style={{flexDirection: 'row'}}>
-                    <Image
-                      source={require('../../../assets/images/profile/location.png')}
-                      style={{width: 24, height: 24}}
-                    />
-                    <Text
-                      style={[
-                        styles.description,
-                        {fontSize: wp('4%'), marginLeft: wp(3)},
-                      ]}>
-                             {`${userDetails.location.city}, ${userDetails.location.state}, ${userDetails.location.country}`}
-                    </Text>
-                  </View>
-                </>
-              )}
-
-              {userDetails?.profession_nun_user && (
-                <>
-                  <Text style={styles.title}>Profession</Text>
                   <View style={{flexDirection: 'row'}}>
                     <Image
                       source={require('../../../assets/images/profile/profession.png')}
@@ -267,10 +318,12 @@ const UserProfile = () => {
                         styles.description,
                         {fontSize: wp('4%'), marginLeft: wp(3)},
                       ]}>
-                      {userDetails?.profession_nun_user}
+                      {userDetails.profession_nun_user}
                     </Text>
                   </View>
                 </>
+              ) : (
+                <Text>{'-'}</Text>
               )}
             </View>
           </View>
@@ -346,7 +399,7 @@ const UserProfile = () => {
           title="Profile Image" // Dynamic title
         />
       </ScrollView>
-    </>
+    </View>
   );
 };
 
@@ -355,7 +408,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F3F7FF',
     paddingTop: hp('10%'),
-    height:hp('82%')
+    height: hp('100%'),
   },
   subContainer: {
     flex: 1,
@@ -380,7 +433,7 @@ const styles = StyleSheet.create({
     top: -50, // Half of the image height to position it halfway outside the container
   },
   profileName: {
-    fontSize: wp('4%'),
+    fontSize: wp('5%'),
     color: '#294776',
     fontFamily: 'Poppins SemiBold',
     marginTop: hp('5%'),
@@ -393,13 +446,12 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   title: {
-    fontSize: 16,
+    fontSize: wp('4%'),
     color: '#000',
     fontFamily: 'Poppins SemiBold',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   description: {
-    // fontSize: 14,
     color: '#294776',
     fontFamily: 'Poppins',
     fontWeight: '400',
